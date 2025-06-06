@@ -159,12 +159,16 @@ export interface DatasetAggregationResponse {
 }
 
 export const datasetService = {
-    importDataset: async (file: File): Promise<Dataset> => {
+    importDataset: async (
+        file: File,
+        datasetName: string
+    ): Promise<Dataset> => {
         try {
             const formData = new FormData();
             formData.append("file", file);
+            formData.append("datasetName", datasetName);
             const response = await axiosInstance.post(
-                "/datasets/import",
+                "/datasets/import/file",
                 formData,
                 {
                     headers: {

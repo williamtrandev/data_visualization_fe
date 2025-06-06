@@ -16,7 +16,7 @@ export const useDatasetImport = (): UseDatasetImportReturn => {
         setError(null);
 
         try {
-            await datasetService.importDataset({ file, datasetName });
+            await datasetService.importDataset(file, datasetName);
         } catch (err) {
             setError(
                 err instanceof Error
