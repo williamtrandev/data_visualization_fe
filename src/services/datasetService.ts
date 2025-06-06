@@ -211,6 +211,18 @@ export const datasetService = {
         }
     },
 
+    getDatasetShortDetail: async (
+        datasetId: number
+    ): Promise<DatasetDetail> => {
+        try {
+            const response = await axiosInstance.get(
+                `/datasets/${datasetId}`
+            );
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
     getDatasetDetail: async (
         datasetId: number,
         queryParams?: QueryParameters

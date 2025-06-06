@@ -1200,7 +1200,7 @@ const DashboardEditor = () => {
 
         try {
             // Fetch dataset details
-            const datasetDetail = await datasetService.getDatasetDetail(
+            const datasetDetail = await datasetService.getDatasetShortDetail(
                 dataset.datasetId
             );
 
