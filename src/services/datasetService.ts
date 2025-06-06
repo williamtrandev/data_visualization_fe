@@ -89,7 +89,16 @@ export interface DatasetDetail {
     createdBy: string;
     totalRows: number;
     status: string;
-    columns: DatasetColumn[];
+    columns: Column[];
+    data: {
+        items: Record<string, any>[];
+        totalCount: number;
+        page: number;
+        pageSize: number;
+        totalPages: number;
+        hasPreviousPage: boolean;
+        hasNextPage: boolean;
+    };
 }
 
 interface DatasetDropdown {
@@ -107,7 +116,7 @@ export type FilterOperator =
     | "contains";
 
 export interface Filter {
-    column: string;
+    field: string;
     operator: FilterOperator;
     value: any;
 }
@@ -202,22 +211,13 @@ export const datasetService = {
         }
     },
 
-    getDatasetDetail: async (datasetId: number): Promise<DatasetDetail> => {
-        try {
-            const response = await axiosInstance.get(`/datasets/${datasetId}`);
-            return response.data;
-        } catch (error) {
-            throw error;
-        }
-    },
-
-    queryDataset: async (
+    getDatasetDetail: async (
         datasetId: number,
-        queryParams: QueryParameters
-    ): Promise<QueryResult> => {
+        queryParams?: QueryParameters
+    ): Promise<DatasetDetail> => {
         try {
             const response = await axiosInstance.post(
-                `/datasets/${datasetId}/query`,
+                `/datasets/${datasetId}/detail`,
                 queryParams
             );
             return response.data;

@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useCallback, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useDatasetDetail } from "@/hooks/useDatasetDetail";
-import { useDatasetQuery } from "@/hooks/useDatasetQuery";
 import {
     Table,
     TableBody,
@@ -48,33 +47,26 @@ const DatasetDetail = () => {
     const {
         dataset,
         columns,
-        isLoading: isDetailLoading,
-        error: detailError,
-    } = useDatasetDetail(Number(datasetId));
-
-    const {
         data,
-        isLoading: isQueryLoading,
-        error: queryError,
+        isLoading,
+        error,
         page,
         totalCount,
         totalPages,
         filters,
         sortBy,
         sortDirection,
-        query,
         addFilter,
         removeFilter,
-        updateFilter,
         clearFilters,
         setSorting,
         clearSorting,
         setPage,
-    } = useDatasetQuery(Number(datasetId));
+    } = useDatasetDetail(Number(datasetId));
 
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
     const [newFilter, setNewFilter] = useState({
-        column: "",
+        field: "",
         operator: "eq" as FilterOperator,
         value: "",
     });
@@ -82,26 +74,26 @@ const DatasetDetail = () => {
     const observer = useRef<IntersectionObserver>();
     const lastElementRef = useCallback(
         (node: HTMLTableRowElement) => {
-            if (isQueryLoading) return;
+            if (isLoading) return;
             if (observer.current) observer.current.disconnect();
             observer.current = new IntersectionObserver((entries) => {
                 if (
                     entries[0].isIntersecting &&
                     page < totalPages &&
-                    !isQueryLoading
+                    !isLoading
                 ) {
                     setPage(page + 1);
                 }
             });
             if (node) observer.current.observe(node);
         },
-        [isQueryLoading, page, totalPages, setPage]
+        [isLoading, page, totalPages, setPage]
     );
 
     const handleAddFilter = () => {
-        if (newFilter.column && newFilter.value) {
+        if (newFilter.field && newFilter.value) {
             addFilter(newFilter);
-            setNewFilter({ column: "", operator: "eq", value: "" });
+            setNewFilter({ field: "", operator: "eq", value: "" });
             setIsFilterDialogOpen(false);
         }
     };
@@ -109,13 +101,14 @@ const DatasetDetail = () => {
     const handleSort = (column: string) => {
         if (sortBy !== column) {
             setSorting(column, "asc");
-            return;
-        }
-
-        if (sortDirection === "asc") {
-            setSorting(column, "desc");
         } else {
-            clearSorting();
+            if (sortDirection === "asc") {
+                setSorting(column, "desc");
+            } else if (sortDirection === "desc") {
+                clearSorting();
+            } else {
+                setSorting(column, "asc");
+            }
         }
     };
 
@@ -132,15 +125,15 @@ const DatasetDetail = () => {
         return <ArrowUpDown className="h-4 w-4 text-muted-foreground" />;
     };
 
-    if (detailError) {
+    if (error) {
         return (
             <div className="p-4 text-center text-red-500">
-                Error loading dataset: {detailError.message}
+                Error loading dataset: {error.message}
             </div>
         );
     }
 
-    if (isDetailLoading || !dataset) {
+    if (isLoading || !dataset) {
         return (
             <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dashboard-primary"></div>
@@ -226,11 +219,11 @@ const DatasetDetail = () => {
                                     Column
                                 </label>
                                 <Select
-                                    value={newFilter.column}
+                                    value={newFilter.field}
                                     onValueChange={(value) =>
                                         setNewFilter((prev) => ({
                                             ...prev,
-                                            column: value,
+                                            field: value,
                                         }))
                                     }
                                 >
@@ -333,17 +326,14 @@ const DatasetDetail = () => {
                             key={index}
                             className="flex items-center gap-2 bg-muted px-3 py-1 rounded-full text-sm"
                         >
-                            <span>{filter.column}</span>
+                            <span>{filter.field}</span>
                             <span>{filter.operator}</span>
                             <span>{filter.value}</span>
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 className="h-4 w-4 p-0"
-                                onClick={() => {
-                                    removeFilter(index);
-                                    query();
-                                }}
+                                onClick={() => removeFilter(index)}
                             >
                                 <X className="h-4 w-4" />
                             </Button>
@@ -397,7 +387,7 @@ const DatasetDetail = () => {
                                 ))}
                             </TableRow>
                         ))}
-                        {isQueryLoading && (
+                        {isLoading && (
                             <TableRow>
                                 <TableCell
                                     colSpan={columns.length + 1}
@@ -414,12 +404,12 @@ const DatasetDetail = () => {
             </div>
 
             {/* Loading indicator at bottom */}
-            {!isQueryLoading && page < totalPages && (
+            {!isLoading && page < totalPages && (
                 <div className="text-center text-muted-foreground">
                     Scroll to load more...
                 </div>
             )}
-            {!isQueryLoading && page >= totalPages && data.length > 0 && (
+            {!isLoading && page >= totalPages && data.length > 0 && (
                 <div className="text-center text-muted-foreground">
                     No more data to load
                 </div>
