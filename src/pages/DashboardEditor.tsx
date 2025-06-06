@@ -77,6 +77,7 @@ import ImportDataModal from "@/components/dashboard/ImportDataModal";
 import { DashboardItem, Dataset, ChartColors } from "@/types/dashboard";
 import { processDataForChart } from "@/lib/chartDataProcessor";
 import DataFieldSelector from "@/components/dashboard/DataFieldSelector";
+import { datasetService } from "@/services/datasetService";
 
 // Mock chart types with more detailed information
 const chartTypes = [
@@ -735,6 +736,55 @@ const chartConfig = {
     },
 };
 
+// TEMPORARY: TestBarChart component for debugging
+const exampleChartOptions = {
+    horizontal: false,
+    showGrid: true,
+    showLegend: true,
+    stacked: false,
+    barColor: "#0078D4",
+    lineColor: "#107C10",
+    categoryField: "Region",
+    valueField: "TotalPrice",
+    aggregation: "sum",
+    data: {
+        categories: ["East", "North", "South", "West"],
+        values: [6797, 6782, 9116, 6270],
+        series: [],
+    },
+};
+const chartData = exampleChartOptions.data.categories.map(
+    (category, index) => ({
+        name: category,
+        value: exampleChartOptions.data.values[index],
+    })
+);
+
+console.log("Test Chart Data Structure:", {
+    exampleChartOptions,
+    chartData,
+});
+
+function TestBarChart() {
+    console.log("Rendering Test Chart with data:", chartData);
+    return (
+        <div style={{ width: 400, height: 300, margin: "24px auto" }}>
+            <ResponsiveContainer width="100%" height="100%">
+                <RechartsBarChart data={chartData}>
+                    {exampleChartOptions.showGrid && (
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E1DFDD" />
+                    )}
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    {exampleChartOptions.showLegend && <Legend />}
+                    <Bar dataKey="value" fill={exampleChartOptions.barColor} />
+                </RechartsBarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+}
+
 const DashboardEditor = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -760,7 +810,11 @@ const DashboardEditor = () => {
     const [isMoving, setIsMoving] = useState(false);
     const [moveOffset, setMoveOffset] = useState({ x: 0, y: 0 });
     const [movingItemId, setMovingItemId] = useState<string | null>(null);
-    const [datasets, setDatasets] = useState<Dataset[]>(initialDatasets || []);
+    const [datasets, setDatasets] = useState<Dataset[]>([]);
+    const [isLoadingDatasets, setIsLoadingDatasets] = useState(false);
+    const [hasMoreDatasets, setHasMoreDatasets] = useState(true);
+    const [datasetPage, setDatasetPage] = useState(1);
+    const datasetPageSize = 20;
     const [importModalOpen, setImportModalOpen] = useState(false);
     const [dashboardBackground, setDashboardBackground] = useState("#f5f5f5");
     // Track canvas dimensions to handle overflow
@@ -773,6 +827,13 @@ const DashboardEditor = () => {
     const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(
         null
     );
+    const [chartOptions, setChartOptions] = useState({
+        categoryField: "",
+        valueField: "",
+        seriesField: "",
+        aggregation: "sum",
+        timeInterval: "month",
+    });
 
     const form = useForm({
         defaultValues: {
@@ -1134,70 +1195,161 @@ const DashboardEditor = () => {
     };
 
     // Update the dataset selection handler
-    const handleDatasetSelect = (dataset: Dataset) => {
+    const handleDatasetSelect = async (dataset: Dataset) => {
         if (!selectedElement) return;
 
-        const updatedItem = {
-            ...selectedElement,
-            dataSourceId: dataset.id,
-            title: `${
-                chartConfig[selectedElement.type as keyof typeof chartConfig]
-                    ?.name || "Chart"
-            } - ${dataset.name}`,
-            chartOptions: {
-                ...selectedElement.chartOptions,
-                categoryField: undefined,
-                valueField: undefined,
-                seriesField: undefined,
-            },
-        };
+        try {
+            // Fetch dataset details
+            const datasetDetail = await datasetService.getDatasetDetail(
+                dataset.datasetId
+            );
 
-        setDashboardItems((prev) =>
-            prev.map((item) =>
-                item.id === selectedElement.id ? updatedItem : item
-            )
-        );
-        setSelectedElement(updatedItem);
-        setSelectedDataset(dataset);
-        setSelectedDataSource(dataset.id);
-        setPreviewData(dataset.previewData || []);
+            const updatedItem = {
+                ...selectedElement,
+                dataSourceId: dataset.datasetId.toString(),
+                title: `${
+                    chartConfig[
+                        selectedElement.type as keyof typeof chartConfig
+                    ]?.name || "Chart"
+                } - ${dataset.datasetName}`,
+                chartOptions: {
+                    ...selectedElement.chartOptions,
+                    categoryField: undefined,
+                    valueField: undefined,
+                    seriesField: undefined,
+                },
+            };
+
+            setDashboardItems((prev) =>
+                prev.map((item) =>
+                    item.id === selectedElement.id ? updatedItem : item
+                )
+            );
+            setSelectedElement(updatedItem);
+            setSelectedDataset(dataset);
+            setSelectedDataSource(dataset.datasetId.toString());
+
+            // Set preview data
+            if (datasetDetail.previewData) {
+                setPreviewData(datasetDetail.previewData);
+            }
+
+            customToast.success("Dataset selected successfully");
+        } catch (error) {
+            console.error("Error fetching dataset details:", error);
+            customToast.error("Failed to load dataset details");
+        }
     };
 
-    // Handle field selection
+    // Update the field selection handler
     const handleFieldSelect = (
         fieldType: "category" | "value" | "series",
-        fieldName: string
+        fieldName: string,
+        options?: {
+            aggregation?: "sum" | "avg" | "count" | "min" | "max";
+            timeInterval?: "day" | "week" | "month" | "quarter" | "year";
+        }
     ) => {
-        if (!selectedElement || !selectedDataset) return;
+        if (!selectedElement) return;
 
-        // Create updated chart options
-        const updatedChartOptions = {
+        // Update selected fields
+        setSelectedFields((prev) => ({
+            ...prev,
+            [fieldType]: fieldName,
+        }));
+
+        // Update chart options based on selected fields
+        const updatedOptions = {
             ...selectedElement.chartOptions,
-            [fieldType === "category"
-                ? "categoryField"
-                : fieldType === "value"
-                ? "valueField"
-                : "seriesField"]: fieldName,
+            [`${fieldType}Field`]: fieldName,
+            ...(options?.aggregation && { aggregation: options.aggregation }),
+            ...(options?.timeInterval && {
+                timeInterval: options.timeInterval,
+            }),
         };
 
-        // Update the selected element
+        // Update the selected element with new chart options
         const updatedItem = {
             ...selectedElement,
-            chartOptions: updatedChartOptions,
+            chartOptions: updatedOptions,
         };
 
-        // Update the dashboard items
         setDashboardItems((prev) =>
             prev.map((item) =>
                 item.id === selectedElement.id ? updatedItem : item
             )
         );
-
-        // Update the selected element state
         setSelectedElement(updatedItem);
+    };
 
-        // Force a re-render of the chart by updating the preview data
-        setPreviewData([...selectedDataset.previewData]);
+    const handleApply = async () => {
+        if (
+            !selectedDataset ||
+            !selectedFields.category ||
+            !selectedFields.value
+        ) {
+            console.log("Missing required fields:", {
+                selectedDataset,
+                selectedFields,
+            });
+            return;
+        }
+
+        try {
+            console.log("Calling API with params:", {
+                datasetId: selectedDataset.datasetId,
+                categoryField: selectedFields.category,
+                valueField: selectedFields.value,
+                seriesField: selectedFields.series,
+                aggregation: chartOptions.aggregation || "sum",
+                timeInterval: chartOptions.timeInterval,
+            });
+
+            const response = await datasetService.aggregateDataset(
+                selectedDataset.datasetId,
+                {
+                    categoryField: selectedFields.category,
+                    valueField: selectedFields.value,
+                    seriesField: selectedFields.series,
+                    aggregation: chartOptions.aggregation || "sum",
+                    timeInterval: chartOptions.timeInterval,
+                }
+            );
+
+            console.log("API Response:", response);
+
+            // Update chart options with new data
+            const updatedOptions = {
+                ...selectedElement?.chartOptions,
+                data: {
+                    categories: response.categories,
+                    values: response.values,
+                    series: response.series || [],
+                },
+            };
+            console.log("Updated chart options:", updatedOptions);
+
+            // Update selected element with new data
+            if (selectedElement) {
+                const updatedItem = {
+                    ...selectedElement,
+                    chartOptions: updatedOptions,
+                };
+                console.log("Updated item:", updatedItem);
+
+                setDashboardItems((prev) =>
+                    prev.map((item) =>
+                        item.id === selectedElement.id ? updatedItem : item
+                    )
+                );
+                setSelectedElement(updatedItem);
+            }
+
+            customToast.success("Chart data updated successfully");
+        } catch (error) {
+            console.error("Error fetching aggregated data:", error);
+            customToast.error("Failed to update chart data");
+        }
     };
 
     // Remove a dashboard item
@@ -1323,30 +1475,26 @@ const DashboardEditor = () => {
 
     // Render the appropriate chart based on type and data
     const renderChart = (item: DashboardItem) => {
-        const dataset = datasets.find((d) => d.id === item.dataSourceId);
-        if (!dataset) {
-            return (
-                <div className="flex items-center justify-center h-full">
-                    <p className="text-muted-foreground">
-                        No data source selected
-                    </p>
-                </div>
-            );
-        }
-
-        // Process data based on selected fields
-        const processedData = processDataForChart(dataset, item.type, {
-            categoryField: item.chartOptions?.categoryField,
-            valueField: item.chartOptions?.valueField,
-            seriesField: item.chartOptions?.seriesField,
-            aggregation: item.chartOptions?.aggregation || "sum",
-        });
+        console.log("Rendering chart for item:", item);
 
         // Get current color palette
         const palette =
             colorPalettes[selectedColorPalette as keyof typeof colorPalettes];
 
-        if (processedData.categories.length === 0) {
+        // Create chart data in the same format as the test chart
+        const chartData = item.chartOptions?.data
+            ? item.chartOptions.data.categories.map((category, index) => ({
+                  name: category,
+                  value: item.chartOptions.data.values[index],
+              }))
+            : [];
+
+        console.log("Chart Data Structure:", {
+            itemChartOptions: item.chartOptions,
+            transformedChartData: chartData,
+        });
+
+        if (chartData.length === 0) {
             return (
                 <div className="flex items-center justify-center h-full">
                     <p className="text-muted-foreground">No data available</p>
@@ -1357,187 +1505,129 @@ const DashboardEditor = () => {
         switch (item.type) {
             case "bar":
                 return (
-                    <ResponsiveContainer width="100%" height="100%">
-                        <RechartsBarChart
-                            data={
-                                processedData.series
-                                    ? processedData.categories.map(
-                                          (category, index) => {
-                                              const dataPoint: any = {
-                                                  name: category,
-                                              };
-                                              processedData.series?.forEach(
-                                                  (series) => {
-                                                      dataPoint[series.name] =
-                                                          series.data[index];
-                                                  }
-                                              );
-                                              return dataPoint;
-                                          }
-                                      )
-                                    : processedData.categories.map(
-                                          (category, index) => ({
-                                              name: category,
-                                              value: processedData.values[
-                                                  index
-                                              ],
-                                          })
-                                      )
-                            }
-                        >
-                            {item.chartOptions?.showGrid && (
-                                <CartesianGrid
-                                    strokeDasharray="3 3"
-                                    stroke={palette.gridColor}
-                                />
-                            )}
-                            <XAxis
-                                dataKey="name"
-                                tick={{ fill: palette.textColor }}
-                            />
-                            <YAxis tick={{ fill: palette.textColor }} />
-                            <Tooltip />
-                            {item.chartOptions?.showLegend && <Legend />}
-                            {processedData.series ? (
-                                processedData.series.map((series, index) => (
-                                    <Bar
-                                        key={series.name}
-                                        dataKey={series.name}
-                                        fill={
-                                            palette.barColors[
-                                                index % palette.barColors.length
-                                            ]
-                                        }
+                    <div style={{ width: "100%", height: "100%" }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RechartsBarChart data={chartData}>
+                                {item.chartOptions?.showGrid && (
+                                    <CartesianGrid
+                                        strokeDasharray="3 3"
+                                        stroke="#E1DFDD"
                                     />
-                                ))
-                            ) : (
+                                )}
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <Tooltip />
+                                {item.chartOptions?.showLegend && (
+                                    <Legend
+                                        verticalAlign="top"
+                                        height={36}
+                                        formatter={(value) => (
+                                            <span style={{ color: "#666" }}>
+                                                {value}
+                                            </span>
+                                        )}
+                                    />
+                                )}
                                 <Bar
                                     dataKey="value"
                                     fill={
-                                        item.chartOptions?.barColor ||
-                                        palette.barColors[0]
+                                        item.chartOptions?.barColor || "#0078D4"
+                                    }
+                                    name={
+                                        item.chartOptions?.valueField || "Value"
                                     }
                                 />
-                            )}
-                        </RechartsBarChart>
-                    </ResponsiveContainer>
+                            </RechartsBarChart>
+                        </ResponsiveContainer>
+                    </div>
                 );
 
             case "line":
                 return (
-                    <ResponsiveContainer width="100%" height="100%">
-                        <RechartsLineChart
-                            data={
-                                processedData.series
-                                    ? processedData.categories.map(
-                                          (category, index) => {
-                                              const dataPoint: any = {
-                                                  name: category,
-                                              };
-                                              processedData.series?.forEach(
-                                                  (series) => {
-                                                      dataPoint[series.name] =
-                                                          series.data[index];
-                                                  }
-                                              );
-                                              return dataPoint;
-                                          }
-                                      )
-                                    : processedData.categories.map(
-                                          (category, index) => ({
-                                              name: category,
-                                              value: processedData.values[
-                                                  index
-                                              ],
-                                          })
-                                      )
-                            }
-                        >
-                            {item.chartOptions?.showGrid && (
-                                <CartesianGrid
-                                    strokeDasharray="3 3"
-                                    stroke={palette.gridColor}
-                                />
-                            )}
-                            <XAxis
-                                dataKey="name"
-                                tick={{ fill: palette.textColor }}
-                            />
-                            <YAxis tick={{ fill: palette.textColor }} />
-                            <Tooltip />
-                            {item.chartOptions?.showLegend && <Legend />}
-                            {processedData.series ? (
-                                processedData.series.map((series, index) => (
-                                    <Line
-                                        key={series.name}
-                                        type="monotone"
-                                        dataKey={series.name}
-                                        stroke={
-                                            palette.lineColors[
-                                                index %
-                                                    palette.lineColors.length
-                                            ]
-                                        }
-                                        strokeWidth={2}
-                                        dot={item.chartOptions?.showDots}
+                    <div style={{ width: "100%", height: "100%" }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RechartsLineChart data={chartData}>
+                                {item.chartOptions?.showGrid && (
+                                    <CartesianGrid
+                                        strokeDasharray="3 3"
+                                        stroke="#E1DFDD"
                                     />
-                                ))
-                            ) : (
+                                )}
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <Tooltip />
+                                {item.chartOptions?.showLegend && (
+                                    <Legend
+                                        verticalAlign="top"
+                                        height={36}
+                                        formatter={(value) => (
+                                            <span style={{ color: "#666" }}>
+                                                {value}
+                                            </span>
+                                        )}
+                                    />
+                                )}
                                 <Line
                                     type="monotone"
                                     dataKey="value"
                                     stroke={
                                         item.chartOptions?.lineColor ||
-                                        palette.lineColors[0]
+                                        "#107C10"
                                     }
                                     strokeWidth={2}
-                                    dot={item.chartOptions?.showDots}
+                                    dot={true}
+                                    name={
+                                        item.chartOptions?.valueField || "Value"
+                                    }
                                 />
-                            )}
-                        </RechartsLineChart>
-                    </ResponsiveContainer>
+                            </RechartsLineChart>
+                        </ResponsiveContainer>
+                    </div>
                 );
 
             case "pie":
-                const pieData = processedData.categories.map(
-                    (category, index) => ({
-                        name: category,
-                        value: processedData.values[index],
-                    })
-                );
-
                 return (
-                    <ResponsiveContainer width="100%" height="100%">
-                        <RechartsPieChart>
-                            <Pie
-                                data={pieData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={
-                                    item.chartOptions?.innerRadius || 0
-                                }
-                                outerRadius={
-                                    item.chartOptions?.outerRadius || 80
-                                }
-                                fill="#8884d8"
-                                dataKey="value"
-                                label
-                            >
-                                {pieData.map((_, index) => (
-                                    <Cell
-                                        key={`cell-${index}`}
-                                        fill={
-                                            palette.pieColors[
-                                                index % palette.pieColors.length
-                                            ]
-                                        }
+                    <div style={{ width: "100%", height: "100%" }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RechartsPieChart>
+                                <Pie
+                                    data={chartData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={0}
+                                    outerRadius={80}
+                                    fill="#8884d8"
+                                    dataKey="value"
+                                    nameKey="name"
+                                    label
+                                >
+                                    {chartData.map((_, index) => (
+                                        <Cell
+                                            key={`cell-${index}`}
+                                            fill={
+                                                palette.pieColors[
+                                                    index %
+                                                        palette.pieColors.length
+                                                ]
+                                            }
+                                        />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                                {item.chartOptions?.showLegend && (
+                                    <Legend
+                                        verticalAlign="bottom"
+                                        height={36}
+                                        formatter={(value) => (
+                                            <span style={{ color: "#666" }}>
+                                                {value}
+                                            </span>
+                                        )}
                                     />
-                                ))}
-                            </Pie>
-                            <Tooltip />
-                            {item.chartOptions?.showLegend && <Legend />}
-                        </RechartsPieChart>
-                    </ResponsiveContainer>
+                                )}
+                            </RechartsPieChart>
+                        </ResponsiveContainer>
+                    </div>
                 );
 
             default:
@@ -1548,6 +1638,103 @@ const DashboardEditor = () => {
                         </p>
                     </div>
                 );
+        }
+    };
+
+    // Fetch datasets when a chart is selected
+    useEffect(() => {
+        const fetchDatasets = async () => {
+            if (isLoadingDatasets || !hasMoreDatasets) return;
+
+            setIsLoadingDatasets(true);
+            try {
+                const response = await datasetService.getDatasets({
+                    page: datasetPage,
+                    pageSize: datasetPageSize,
+                });
+                const formattedDatasets = response.items.map((dataset) => ({
+                    datasetId: dataset.datasetId,
+                    datasetName: dataset.datasetName,
+                    sourceType: dataset.sourceType,
+                    sourceName: dataset.sourceName,
+                    totalRows: dataset.totalRows,
+                    columns: dataset.columns || [],
+                    createdAt: dataset.createdAt,
+                    createdBy: dataset.createdBy,
+                    status: dataset.status,
+                    icon:
+                        dataset.sourceType === "csv"
+                            ? FileText
+                            : dataset.sourceType === "excel"
+                            ? FileSpreadsheet
+                            : FileChartLine,
+                }));
+
+                setDatasets((prev) =>
+                    datasetPage === 1
+                        ? formattedDatasets
+                        : [...prev, ...formattedDatasets]
+                );
+                setHasMoreDatasets(response.hasNextPage);
+                setDatasetPage((prev) => prev + 1);
+            } catch (error) {
+                customToast.error("Failed to fetch datasets");
+                console.error("Error fetching datasets:", error);
+            } finally {
+                setIsLoadingDatasets(false);
+            }
+        };
+
+        if (selectedElement) {
+            fetchDatasets();
+        }
+    }, [selectedElement]);
+
+    // Handle scroll for infinite loading
+    const handleDatasetScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+        if (
+            scrollHeight - scrollTop <= clientHeight * 1.5 &&
+            !isLoadingDatasets &&
+            hasMoreDatasets
+        ) {
+            // Trigger fetch when user scrolls near bottom
+            const fetchDatasets = async () => {
+                setIsLoadingDatasets(true);
+                try {
+                    const response = await datasetService.getDatasets(
+                        datasetPage,
+                        datasetPageSize
+                    );
+                    const formattedDatasets = response.items.map((dataset) => ({
+                        datasetId: dataset.datasetId,
+                        datasetName: dataset.datasetName,
+                        sourceType: dataset.sourceType,
+                        sourceName: dataset.sourceName,
+                        totalRows: dataset.totalRows,
+                        columns: dataset.columns || [],
+                        createdAt: dataset.createdAt,
+                        createdBy: dataset.createdBy,
+                        status: dataset.status,
+                        icon:
+                            dataset.sourceType === "csv"
+                                ? FileText
+                                : dataset.sourceType === "excel"
+                                ? FileSpreadsheet
+                                : FileChartLine,
+                    }));
+
+                    setDatasets((prev) => [...prev, ...formattedDatasets]);
+                    setHasMoreDatasets(response.hasNextPage);
+                    setDatasetPage((prev) => prev + 1);
+                } catch (error) {
+                    customToast.error("Failed to fetch more datasets");
+                    console.error("Error fetching more datasets:", error);
+                } finally {
+                    setIsLoadingDatasets(false);
+                }
+            };
+            fetchDatasets();
         }
     };
 
@@ -1667,7 +1854,10 @@ const DashboardEditor = () => {
                                 value="data"
                                 className="flex-1 overflow-hidden p-0"
                             >
-                                <ScrollArea className="h-full">
+                                <ScrollArea
+                                    className="h-full"
+                                    onScroll={handleDatasetScroll}
+                                >
                                     <div className="p-4">
                                         <Button
                                             className="w-full mb-4"
@@ -1684,10 +1874,10 @@ const DashboardEditor = () => {
                                             <div className="space-y-4">
                                                 {datasets.map((dataset) => (
                                                     <div
-                                                        key={dataset.id}
+                                                        key={dataset.datasetId}
                                                         className={`flex flex-col gap-3 p-3 border rounded-md transition-colors ${
                                                             selectedElement.dataSourceId ===
-                                                            dataset.id
+                                                            dataset.datasetId.toString()
                                                                 ? "bg-muted/50 border-primary"
                                                                 : "hover:bg-muted/50"
                                                         }`}
@@ -1697,43 +1887,28 @@ const DashboardEditor = () => {
                                                             )
                                                         }
                                                     >
-                                                        <div className="flex items-center gap-3 cursor-pointer">
-                                                            <div className="bg-primary/10 p-2 rounded-md">
-                                                                {typeof dataset.icon ===
-                                                                "function" ? (
-                                                                    <dataset.icon className="h-5 w-5 text-primary" />
-                                                                ) : (
-                                                                    <FileText className="h-5 w-5 text-primary" />
-                                                                )}
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <h4 className="text-sm font-medium truncate">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <Database className="h-4 w-4" />
+                                                                <span className="font-medium">
                                                                     {
-                                                                        dataset.name
+                                                                        dataset.datasetName
                                                                     }
-                                                                </h4>
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    {
-                                                                        dataset.rows
-                                                                    }{" "}
-                                                                    rows •{" "}
-                                                                    {
-                                                                        dataset.columns
-                                                                    }{" "}
-                                                                    columns
-                                                                </p>
+                                                                </span>
                                                             </div>
-                                                            <div className="text-xs text-right text-muted-foreground">
-                                                                <p>
-                                                                    {
-                                                                        dataset.type
-                                                                    }
-                                                                </p>
+                                                            <div className="text-sm text-muted-foreground">
+                                                                {
+                                                                    dataset.totalRows
+                                                                }{" "}
+                                                                rows
                                                             </div>
+                                                        </div>
+                                                        <div className="text-sm text-muted-foreground">
+                                                            {dataset.sourceName}
                                                         </div>
 
                                                         {selectedElement.dataSourceId ===
-                                                            dataset.id && (
+                                                            dataset.datasetId.toString() && (
                                                             <div className="mt-2 border-t pt-2">
                                                                 <DataFieldSelector
                                                                     dataset={
@@ -1754,6 +1929,9 @@ const DashboardEditor = () => {
                                                                     onFieldSelect={
                                                                         handleFieldSelect
                                                                     }
+                                                                    onApply={
+                                                                        handleApply
+                                                                    }
                                                                     chartType={
                                                                         selectedElement.type
                                                                     }
@@ -1762,20 +1940,16 @@ const DashboardEditor = () => {
                                                         )}
                                                     </div>
                                                 ))}
+                                                {isLoadingDatasets && (
+                                                    <div className="flex justify-center py-4">
+                                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : (
-                                            <div className="text-center p-8">
-                                                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-muted flex items-center justify-center">
-                                                    <Database className="h-6 w-6 text-muted-foreground" />
-                                                </div>
-                                                <h3 className="text-base font-medium mb-1">
-                                                    Select a chart first
-                                                </h3>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Click on a chart in the
-                                                    canvas to select and
-                                                    configure its data
-                                                </p>
+                                            <div className="text-center text-muted-foreground">
+                                                Select a chart to choose a
+                                                dataset
                                             </div>
                                         )}
                                     </div>

@@ -8,6 +8,7 @@ import DashboardList from "@/pages/DashboardList";
 import DashboardEditor from "@/pages/DashboardEditor";
 import DashboardViewer from "@/pages/DashboardViewer";
 import DataSourceManager from "@/pages/DataSourceManager";
+import DatasetDetail from "@/pages/DatasetDetail";
 import WorkspaceList from "@/pages/WorkspaceList";
 import WorkspaceEditor from "@/pages/WorkspaceEditor";
 import ReportList from "@/pages/ReportList";
@@ -16,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { getAuthToken } from "@/lib/auth";
+import MergeDatasets from "@/pages/MergeDatasets";
 
 const queryClient = new QueryClient();
 
@@ -80,6 +82,14 @@ const App = () => (
                             element={<DashboardViewer />}
                         />
                         <Route path="data" element={<DataSourceManager />} />
+                        <Route
+                            path="datasets/:datasetId"
+                            element={<DatasetDetail />}
+                        />
+                        <Route
+                            path="datasets/merge"
+                            element={<MergeDatasets />}
+                        />
                         <Route path="workspaces" element={<WorkspaceList />} />
                         <Route
                             path="workspace/new"

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -16,50 +17,105 @@ import {
     FileText,
     Link as LinkIcon,
     Plus,
+    ChevronLeft,
+    ChevronRight,
 } from "lucide-react";
 import { customToast } from "@/lib/toast";
-
-// Mock data sources
-const dataSources = [
-    {
-        id: "1",
-        name: "Sales Data 2025",
-        type: "csv",
-        rows: 234,
-        columns: 8,
-        lastUpdated: "2025-04-28",
-        createdBy: "John Doe",
-    },
-    {
-        id: "2",
-        name: "Marketing Budget",
-        type: "excel",
-        rows: 56,
-        columns: 12,
-        lastUpdated: "2025-05-01",
-        createdBy: "Jane Smith",
-    },
-    {
-        id: "3",
-        name: "Customer Feedback",
-        type: "api",
-        rows: 453,
-        columns: 15,
-        lastUpdated: "2025-04-25",
-        createdBy: "Alex Wong",
-    },
-];
+import { useDatasetImport } from "@/hooks/useDatasetImport";
+import { useDatasets } from "@/hooks/useDatasets";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 const DataSourceManager = () => {
+    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState("");
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isAddSourceModalOpen, setIsAddSourceModalOpen] = useState(false);
+    const [selectedFileType, setSelectedFileType] = useState<"csv" | "excel">(
+        "csv"
+    );
+    const [datasetName, setDatasetName] = useState("");
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const {
+        importDataset,
+        isLoading: isImporting,
+        error: importError,
+    } = useDatasetImport();
+    const {
+        datasets,
+        isLoading,
+        error,
+        page,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+        nextPage,
+        previousPage,
+        refreshDatasets,
+    } = useDatasets();
 
-    const filteredDataSources = dataSources.filter((source) =>
-        source.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredDataSources = datasets.filter((source) =>
+        source.datasetName.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const handleAddDataSource = (type: string) => {
-        customToast.success(`Creating new ${type} data source...`);
-        // In a real app, this would open a form or modal
+        if (type === "CSV" || type === "Excel") {
+            setSelectedFileType(type.toLowerCase() as "csv" | "excel");
+            setIsImportModalOpen(true);
+            setIsAddSourceModalOpen(false);
+        } else {
+            customToast.success(`Creating new ${type} data source...`);
+            setIsAddSourceModalOpen(false);
+        }
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setSelectedFile(file);
+        }
+    };
+
+    const handleImport = async () => {
+        if (!selectedFile || !datasetName) return;
+
+        try {
+            await importDataset(selectedFile, datasetName);
+            customToast.success("Dataset imported successfully!");
+            setIsImportModalOpen(false);
+            // Reset form
+            setSelectedFile(null);
+            setDatasetName("");
+            // Reset file input
+            const fileInput = document.querySelector(
+                'input[type="file"]'
+            ) as HTMLInputElement;
+            if (fileInput) fileInput.value = "";
+            // Refresh datasets list
+            refreshDatasets();
+        } catch (err) {
+            console.error("Import failed:", err);
+            customToast.error("Failed to import dataset");
+        }
+    };
+
+    const getSourceTypeIcon = (type: string) => {
+        switch (type.toLowerCase()) {
+            case "csv":
+                return <FileText className="h-4 w-4 text-dashboard-primary" />;
+            case "excel":
+                return <Table className="h-4 w-4 text-dashboard-accent" />;
+            case "api":
+                return (
+                    <LinkIcon className="h-4 w-4 text-dashboard-secondary" />
+                );
+            default:
+                return <Database className="h-4 w-4 text-dashboard-primary" />;
+        }
     };
 
     return (
@@ -73,7 +129,10 @@ const DataSourceManager = () => {
                         Connect and manage your data
                     </p>
                 </div>
-                <Button className="bg-dashboard-primary hover:bg-dashboard-primary/90">
+                <Button
+                    className="bg-dashboard-primary hover:bg-dashboard-primary/90"
+                    onClick={() => setIsAddSourceModalOpen(true)}
+                >
                     <Plus className="mr-2 h-4 w-4" /> Add Data Source
                 </Button>
             </div>
@@ -88,128 +147,210 @@ const DataSourceManager = () => {
                 <Database className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredDataSources.map((source) => (
-                    <Card key={source.id} className="overflow-hidden">
-                        <CardHeader className="p-4 pb-2">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    {source.type === "csv" && (
-                                        <FileText className="h-4 w-4 text-dashboard-primary" />
-                                    )}
-                                    {source.type === "excel" && (
-                                        <Table className="h-4 w-4 text-dashboard-accent" />
-                                    )}
-                                    {source.type === "api" && (
-                                        <LinkIcon className="h-4 w-4 text-dashboard-secondary" />
-                                    )}
-                                    <CardTitle className="text-lg">
-                                        {source.name}
-                                    </CardTitle>
-                                </div>
+            {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dashboard-primary"></div>
+                </div>
+            ) : error ? (
+                <div className="text-center text-red-500 p-4">
+                    Error loading datasets: {error.message}
+                </div>
+            ) : (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredDataSources.map((source) => (
+                            <Card
+                                key={source.datasetId}
+                                className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                                onClick={() =>
+                                    navigate(`/datasets/${source.datasetId}`)
+                                }
+                            >
+                                <CardHeader className="p-4 pb-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            {getSourceTypeIcon(
+                                                source.sourceType
+                                            )}
+                                            <CardTitle className="text-lg">
+                                                {source.datasetName}
+                                            </CardTitle>
+                                        </div>
+                                    </div>
+                                    <CardDescription>
+                                        {source.sourceType.toUpperCase()} •{" "}
+                                        {source.totalRows} rows
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="p-4 pt-2">
+                                    <div className="h-24 bg-muted/50 rounded flex items-center justify-center">
+                                        <Table className="h-8 w-8 text-muted-foreground opacity-30" />
+                                    </div>
+                                </CardContent>
+                                <CardFooter className="p-4 pt-2 text-xs text-muted-foreground justify-between">
+                                    <div>
+                                        Last updated:{" "}
+                                        {new Date(
+                                            source.createdAt
+                                        ).toLocaleDateString()}
+                                    </div>
+                                    <div>Created by: {source.createdBy}</div>
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
+
+                    {/* Pagination */}
+                    <div className="flex justify-center items-center gap-4 mt-6">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={previousPage}
+                            disabled={!hasPreviousPage}
+                        >
+                            <ChevronLeft className="h-4 w-4 mr-2" />
+                            Previous
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                            Page {page} of {totalPages}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={nextPage}
+                            disabled={!hasNextPage}
+                        >
+                            Next
+                            <ChevronRight className="h-4 w-4 ml-2" />
+                        </Button>
+                    </div>
+                </>
+            )}
+
+            {/* Add New Data Source Modal */}
+            <Dialog
+                open={isAddSourceModalOpen}
+                onOpenChange={setIsAddSourceModalOpen}
+            >
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Add New Data Source</DialogTitle>
+                    </DialogHeader>
+                    <Tabs defaultValue="file" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="file">File Upload</TabsTrigger>
+                            <TabsTrigger value="api">API</TabsTrigger>
+                            <TabsTrigger value="database">Database</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="file" className="space-y-4 pt-4">
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start"
+                                onClick={() => handleAddDataSource("CSV")}
+                            >
+                                <FileText className="mr-2 h-4 w-4" />
+                                CSV File
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start"
+                                onClick={() => handleAddDataSource("Excel")}
+                            >
+                                <Table className="mr-2 h-4 w-4" />
+                                Excel Spreadsheet
+                            </Button>
+                        </TabsContent>
+
+                        <TabsContent value="api" className="pt-4">
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start"
+                                onClick={() => handleAddDataSource("REST API")}
+                            >
+                                <LinkIcon className="mr-2 h-4 w-4" />
+                                REST API Endpoint
+                            </Button>
+                        </TabsContent>
+
+                        <TabsContent
+                            value="database"
+                            className="space-y-4 pt-4"
+                        >
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start"
+                                onClick={() => handleAddDataSource("MySQL")}
+                            >
+                                <Database className="mr-2 h-4 w-4" />
+                                MySQL
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start"
+                                onClick={() => handleAddDataSource("MongoDB")}
+                            >
+                                <Database className="mr-2 h-4 w-4" />
+                                MongoDB
+                            </Button>
+                        </TabsContent>
+                    </Tabs>
+                </DialogContent>
+            </Dialog>
+
+            {/* Import Modal */}
+            <Dialog
+                open={isImportModalOpen}
+                onOpenChange={setIsImportModalOpen}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>
+                            Import {selectedFileType.toUpperCase()} File
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">
+                                Dataset Name
+                            </label>
+                            <Input
+                                value={datasetName}
+                                onChange={(e) => setDatasetName(e.target.value)}
+                                placeholder="Enter dataset name"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">
+                                Select File
+                            </label>
+                            <Input
+                                type="file"
+                                accept={
+                                    selectedFileType === "csv"
+                                        ? ".csv"
+                                        : ".xlsx,.xls"
+                                }
+                                onChange={handleFileChange}
+                            />
+                        </div>
+                        {importError && (
+                            <div className="text-sm text-red-500">
+                                Error: {importError.message}
                             </div>
-                            <CardDescription>
-                                {source.type.toUpperCase()} • {source.rows} rows
-                                • {source.columns} columns
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-2">
-                            <div className="h-24 bg-muted/50 rounded flex items-center justify-center">
-                                <Table className="h-8 w-8 text-muted-foreground opacity-30" />
-                            </div>
-                        </CardContent>
-                        <CardFooter className="p-4 pt-2 text-xs text-muted-foreground justify-between">
-                            <div>Last updated: {source.lastUpdated}</div>
-                            <div>Created by: {source.createdBy}</div>
-                        </CardFooter>
-                    </Card>
-                ))}
-
-                {/* Add new data source cards */}
-                <Card className="overflow-hidden">
-                    <CardHeader className="p-4">
-                        <CardTitle className="text-lg">
-                            Add New Data Source
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                        <Tabs defaultValue="file">
-                            <TabsList className="grid w-full grid-cols-3">
-                                <TabsTrigger value="file">
-                                    File Upload
-                                </TabsTrigger>
-                                <TabsTrigger value="api">API</TabsTrigger>
-                                <TabsTrigger value="database">
-                                    Database
-                                </TabsTrigger>
-                            </TabsList>
-
-                            <TabsContent value="file" className="p-2">
-                                <div className="flex flex-col gap-2">
-                                    <Button
-                                        variant="outline"
-                                        className="justify-start"
-                                        onClick={() =>
-                                            handleAddDataSource("CSV")
-                                        }
-                                    >
-                                        <FileText className="mr-2 h-4 w-4" />
-                                        CSV File
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="justify-start"
-                                        onClick={() =>
-                                            handleAddDataSource("Excel")
-                                        }
-                                    >
-                                        <Table className="mr-2 h-4 w-4" />
-                                        Excel Spreadsheet
-                                    </Button>
-                                </div>
-                            </TabsContent>
-
-                            <TabsContent value="api" className="p-2">
-                                <Button
-                                    variant="outline"
-                                    className="w-full justify-start"
-                                    onClick={() =>
-                                        handleAddDataSource("REST API")
-                                    }
-                                >
-                                    <LinkIcon className="mr-2 h-4 w-4" />
-                                    REST API Endpoint
-                                </Button>
-                            </TabsContent>
-
-                            <TabsContent value="database" className="p-2">
-                                <div className="flex flex-col gap-2">
-                                    <Button
-                                        variant="outline"
-                                        className="justify-start"
-                                        onClick={() =>
-                                            handleAddDataSource("MySQL")
-                                        }
-                                    >
-                                        <Database className="mr-2 h-4 w-4" />
-                                        MySQL
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="justify-start"
-                                        onClick={() =>
-                                            handleAddDataSource("MongoDB")
-                                        }
-                                    >
-                                        <Database className="mr-2 h-4 w-4" />
-                                        MongoDB
-                                    </Button>
-                                </div>
-                            </TabsContent>
-                        </Tabs>
-                    </CardContent>
-                </Card>
-            </div>
+                        )}
+                        <Button
+                            className="w-full"
+                            onClick={handleImport}
+                            disabled={
+                                isImporting || !selectedFile || !datasetName
+                            }
+                        >
+                            {isImporting ? "Importing..." : "Import Dataset"}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

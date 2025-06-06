@@ -9,6 +9,7 @@ import {
     Database,
     Users,
     FileText,
+    Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/auth";
@@ -75,6 +76,13 @@ const Navbar = () => {
                         >
                             <Database className="h-4 w-4" />
                             Data Sources
+                        </Link>
+                        <Link
+                            to="/datasets/merge"
+                            className="text-sm font-medium hover:text-dashboard-primary transition-colors flex items-center gap-1"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Merge Datasets
                         </Link>
                     </nav>
                 </div>
