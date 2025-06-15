@@ -20,15 +20,39 @@ const Register = () => {
     const [formData, setFormData] = useState({
         username: "",
         email: "",
+        fullName: "",
         password: "",
+        confirmPassword: "",
     });
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError("");
+
+        // Validate password match
+        if (formData.password !== formData.confirmPassword) {
+            setError("Passwords do not match");
+            return;
+        }
+
+        // Validate password length
+        if (formData.password.length < 8) {
+            setError("Password must be at least 8 characters long");
+            return;
+        }
+
+        // Validate fullName
+        if (!formData.fullName.trim()) {
+            setError("Full name is required");
+            return;
+        }
+
         setLoading(true);
         try {
-            const response = await register(formData);
+            const { confirmPassword, ...registerData } = formData;
+            const response = await register(registerData);
             setAuthToken(response.token);
             toast({
                 title: "Success",
@@ -38,6 +62,7 @@ const Register = () => {
             });
             navigate("/");
         } catch (error: any) {
+            setError(error.response?.data?.message || "Registration failed");
             toast({
                 title: "Error",
                 description:
@@ -129,6 +154,30 @@ const Register = () => {
                             </div>
                             <div className="space-y-2">
                                 <label
+                                    htmlFor="fullName"
+                                    className="text-sm font-medium"
+                                >
+                                    Full Name
+                                </label>
+                                <div className="relative">
+                                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                                    <Input
+                                        id="fullName"
+                                        type="text"
+                                        value={formData.fullName}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                fullName: e.target.value,
+                                            })
+                                        }
+                                        className="pl-9"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label
                                     htmlFor="email"
                                     className="text-sm font-medium"
                                 >
@@ -175,6 +224,33 @@ const Register = () => {
                                     />
                                 </div>
                             </div>
+                            <div className="space-y-2">
+                                <label
+                                    htmlFor="confirmPassword"
+                                    className="text-sm font-medium"
+                                >
+                                    Confirm Password
+                                </label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                                    <Input
+                                        id="confirmPassword"
+                                        type="password"
+                                        value={formData.confirmPassword}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                confirmPassword: e.target.value,
+                                            })
+                                        }
+                                        className="pl-9"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            {error && (
+                                <p className="text-sm text-red-600">{error}</p>
+                            )}
                         </CardContent>
                         <CardFooter className="flex flex-col space-y-4">
                             <Button

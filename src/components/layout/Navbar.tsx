@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
     Search,
@@ -10,6 +10,7 @@ import {
     Users,
     FileText,
     Plus,
+    Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/auth";
@@ -17,10 +18,35 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import axiosInstance from "@/lib/axios";
+
+interface UserProfile {
+    id: number;
+    username: string;
+    email: string;
+    fullName: string;
+}
 
 const Navbar = () => {
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const response = await axiosInstance.get("/auth/profile");
+                setUserProfile(response.data);
+            } catch (error) {
+                console.error("Failed to fetch user profile:", error);
+            }
+        };
+
+        fetchProfile();
+    }, []);
+
     return (
         <header className="w-full border-b border-dashboard-border">
             <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -100,6 +126,14 @@ const Navbar = () => {
                         <Settings className="h-5 w-5" />
                     </Button>
 
+                    {userProfile && (
+                        <div className="hidden md:flex items-center gap-2 border-l pl-4">
+                            <p className="text-sm font-medium">
+                                {userProfile.fullName}
+                            </p>
+                        </div>
+                    )}
+
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
@@ -111,6 +145,15 @@ const Navbar = () => {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                                <Link
+                                    to="/profile"
+                                    className="flex items-center"
+                                >
+                                    <User className="mr-2 h-4 w-4" />
+                                    <span>Profile</span>
+                                </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={logout}
                                 className="text-red-600"

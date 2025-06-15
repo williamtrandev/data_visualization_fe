@@ -16,8 +16,11 @@ import ReportEditor from "@/pages/ReportEditor";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ResetPassword from "./pages/ResetPassword";
+import Profile from "./pages/Profile";
 import { getAuthToken } from "@/lib/auth";
 import MergeDatasets from "@/pages/MergeDatasets";
+import ForgotPassword from "./pages/ForgotPassword";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +60,22 @@ const App = () => (
                         element={
                             <AuthRoute>
                                 <Register />
+                            </AuthRoute>
+                        }
+                    />
+                    <Route
+                        path="/forgot-password"
+                        element={
+                            <AuthRoute>
+                                <ForgotPassword />
+                            </AuthRoute>
+                        }
+                    />
+                    <Route
+                        path="/reset-password"
+                        element={
+                            <AuthRoute>
+                                <ResetPassword />
                             </AuthRoute>
                         }
                     />
@@ -105,6 +124,7 @@ const App = () => (
                             path="report/edit/:id"
                             element={<ReportEditor />}
                         />
+                        <Route path="profile" element={<Profile />} />
                     </Route>
                     <Route path="*" element={<NotFound />} />
                 </Routes>

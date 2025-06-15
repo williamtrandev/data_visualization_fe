@@ -149,6 +149,16 @@ const Login = () => {
                                     />
                                 </div>
                             </div>
+                            <div className="flex justify-end">
+                                <Button
+                                    type="button"
+                                    variant="link"
+                                    className="text-sm text-dashboard-primary hover:text-dashboard-primary/90"
+                                    onClick={() => navigate("/forgot-password")}
+                                >
+                                    Forgot password?
+                                </Button>
+                            </div>
                         </CardContent>
                         <CardFooter className="flex flex-col space-y-4">
                             <Button
