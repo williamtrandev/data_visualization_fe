@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 interface ImportDataModalProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: () => void;
   onDataImported: (data: any) => void;
 }
 
@@ -60,7 +60,7 @@ const ImportDataModal = ({ open, onOpenChange, onDataImported }: ImportDataModal
       });
       
       toast.success('Dữ liệu đã được tải lên thành công!');
-      onOpenChange(false);
+      onOpenChange();
     } catch (error) {
       console.error('Lỗi khi đọc file:', error);
       toast.error('Có lỗi xảy ra khi xử lý file');
@@ -100,7 +100,7 @@ const ImportDataModal = ({ open, onOpenChange, onDataImported }: ImportDataModal
       });
       
       toast.success('Dữ liệu API đã được nhập thành công!');
-      onOpenChange(false);
+      onOpenChange();
     } catch (error) {
       console.error('Lỗi khi lấy dữ liệu API:', error);
       toast.error('Có lỗi xảy ra khi lấy dữ liệu từ API');

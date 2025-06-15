@@ -78,6 +78,7 @@ import { DashboardItem, Dataset, ChartColors } from "@/types/dashboard";
 import { processDataForChart } from "@/lib/chartDataProcessor";
 import DataFieldSelector from "@/components/dashboard/DataFieldSelector";
 import { datasetService } from "@/services/datasetService";
+import { dashboardService } from "@/services/dashboardService";
 
 // Mock chart types with more detailed information
 const chartTypes = [
@@ -171,338 +172,6 @@ const visualizationTypes = [
             "pagination",
             "styling",
             "columnWidths",
-        ],
-    },
-];
-
-// Enhanced mock datasets with detailed information
-const initialDatasets: Dataset[] = [
-    {
-        id: "sales-2025",
-        name: "Sales Data 2025",
-        type: "csv",
-        rows: 234,
-        columns: 8,
-        columnNames: [
-            "Date",
-            "Region",
-            "Product",
-            "Sales",
-            "Profit",
-            "Units",
-            "Customer",
-            "Channel",
-        ],
-        lastUpdated: "2025-02-15T08:30:00Z",
-        createdBy: "John Smith",
-        icon: FileSpreadsheet,
-        previewData: [
-            {
-                Date: "2025-01-01",
-                Region: "North",
-                Product: "Laptop",
-                Sales: 25000,
-                Profit: 5000,
-                Units: 25,
-                Customer: "Tech Corp",
-                Channel: "Direct",
-            },
-            {
-                Date: "2025-01-01",
-                Region: "North",
-                Product: "Phone",
-                Sales: 18000,
-                Profit: 3600,
-                Units: 36,
-                Customer: "Mobile Inc",
-                Channel: "Online",
-            },
-            {
-                Date: "2025-01-01",
-                Region: "South",
-                Product: "Laptop",
-                Sales: 22000,
-                Profit: 4400,
-                Units: 22,
-                Customer: "Global IT",
-                Channel: "Direct",
-            },
-            {
-                Date: "2025-01-01",
-                Region: "South",
-                Product: "Phone",
-                Sales: 15000,
-                Profit: 3000,
-                Units: 30,
-                Customer: "South Tech",
-                Channel: "Online",
-            },
-            {
-                Date: "2025-01-15",
-                Region: "North",
-                Product: "Laptop",
-                Sales: 26000,
-                Profit: 5200,
-                Units: 26,
-                Customer: "North Solutions",
-                Channel: "Direct",
-            },
-            {
-                Date: "2025-01-15",
-                Region: "North",
-                Product: "Phone",
-                Sales: 20000,
-                Profit: 4000,
-                Units: 40,
-                Customer: "North Mobile",
-                Channel: "Online",
-            },
-            {
-                Date: "2025-01-15",
-                Region: "South",
-                Product: "Laptop",
-                Sales: 23000,
-                Profit: 4600,
-                Units: 23,
-                Customer: "South Tech",
-                Channel: "Direct",
-            },
-            {
-                Date: "2025-01-15",
-                Region: "South",
-                Product: "Phone",
-                Sales: 17000,
-                Profit: 3400,
-                Units: 34,
-                Customer: "South Mobile",
-                Channel: "Online",
-            },
-            {
-                Date: "2025-02-01",
-                Region: "North",
-                Product: "Laptop",
-                Sales: 28000,
-                Profit: 5600,
-                Units: 28,
-                Customer: "North Tech",
-                Channel: "Direct",
-            },
-            {
-                Date: "2025-02-01",
-                Region: "North",
-                Product: "Phone",
-                Sales: 22000,
-                Profit: 4400,
-                Units: 44,
-                Customer: "North Mobile",
-                Channel: "Online",
-            },
-            {
-                Date: "2025-02-01",
-                Region: "South",
-                Product: "Laptop",
-                Sales: 24000,
-                Profit: 4800,
-                Units: 24,
-                Customer: "South Systems",
-                Channel: "Direct",
-            },
-            {
-                Date: "2025-02-01",
-                Region: "South",
-                Product: "Phone",
-                Sales: 19000,
-                Profit: 3800,
-                Units: 38,
-                Customer: "South Mobile",
-                Channel: "Online",
-            },
-            {
-                Date: "2025-02-15",
-                Region: "North",
-                Product: "Laptop",
-                Sales: 27000,
-                Profit: 5400,
-                Units: 27,
-                Customer: "North Systems",
-                Channel: "Direct",
-            },
-            {
-                Date: "2025-02-15",
-                Region: "North",
-                Product: "Phone",
-                Sales: 21000,
-                Profit: 4200,
-                Units: 42,
-                Customer: "North Mobile",
-                Channel: "Online",
-            },
-            {
-                Date: "2025-02-15",
-                Region: "South",
-                Product: "Laptop",
-                Sales: 25000,
-                Profit: 5000,
-                Units: 25,
-                Customer: "South Tech",
-                Channel: "Direct",
-            },
-            {
-                Date: "2025-02-15",
-                Region: "South",
-                Product: "Phone",
-                Sales: 20000,
-                Profit: 4000,
-                Units: 40,
-                Customer: "South Mobile",
-                Channel: "Online",
-            },
-        ],
-    },
-    {
-        id: "2",
-        name: "Marketing Budget",
-        type: "excel",
-        rows: 56,
-        columns: 12,
-        columnNames: [
-            "Month",
-            "Channel",
-            "Campaign",
-            "Budget",
-            "Spend",
-            "ROI",
-            "Leads",
-            "Conversions",
-        ],
-        lastUpdated: "2025-05-01",
-        createdBy: "Jane Smith",
-        icon: FileSpreadsheet,
-        previewData: [
-            {
-                Month: "Jan 2025",
-                Channel: "Social Media",
-                Budget: 15000,
-                Spend: 14750,
-                ROI: 2.3,
-            },
-            {
-                Month: "Jan 2025",
-                Channel: "Search",
-                Budget: 22000,
-                Spend: 21800,
-                ROI: 3.1,
-            },
-            {
-                Month: "Feb 2025",
-                Channel: "Social Media",
-                Budget: 15000,
-                Spend: 15200,
-                ROI: 2.5,
-            },
-            {
-                Month: "Feb 2025",
-                Channel: "Search",
-                Budget: 22000,
-                Spend: 20500,
-                ROI: 3.4,
-            },
-        ],
-    },
-    {
-        id: "3",
-        name: "Customer Feedback",
-        type: "api",
-        rows: 453,
-        columns: 15,
-        columnNames: [
-            "Date",
-            "Customer ID",
-            "Product",
-            "Rating",
-            "Sentiment",
-            "Comments",
-        ],
-        lastUpdated: "2025-04-25",
-        createdBy: "Alex Wong",
-        icon: FileChartLine,
-        previewData: [
-            {
-                Date: "2025-04-01",
-                Customer: "10045",
-                Product: "Widget A",
-                Rating: 4.5,
-                Sentiment: "Positive",
-            },
-            {
-                Date: "2025-04-02",
-                Customer: "10086",
-                Product: "Widget B",
-                Rating: 3.2,
-                Sentiment: "Neutral",
-            },
-            {
-                Date: "2025-04-03",
-                Customer: "10124",
-                Product: "Widget C",
-                Rating: 2.0,
-                Sentiment: "Negative",
-            },
-            {
-                Date: "2025-04-04",
-                Customer: "10156",
-                Product: "Widget A",
-                Rating: 5.0,
-                Sentiment: "Positive",
-            },
-        ],
-    },
-    {
-        id: "4",
-        name: "Regional Performance",
-        type: "database",
-        rows: 189,
-        columns: 10,
-        columnNames: [
-            "Region",
-            "Sales",
-            "Profit",
-            "Growth",
-            "Expenses",
-            "Employees",
-        ],
-        lastUpdated: "2025-05-02",
-        createdBy: "Sarah Chen",
-        icon: FileChartPie,
-        previewData: [
-            {
-                Region: "North America",
-                Sales: 1250000,
-                Profit: 312500,
-                Growth: 12.3,
-                Employees: 45,
-            },
-            {
-                Region: "Europe",
-                Sales: 980000,
-                Profit: 245000,
-                Growth: 8.7,
-                Employees: 38,
-            },
-            {
-                Region: "Asia Pacific",
-                Sales: 1450000,
-                Profit: 362500,
-                Growth: 15.2,
-                Employees: 52,
-            },
-            {
-                Region: "Latin America",
-                Sales: 560000,
-                Profit: 140000,
-                Growth: 9.8,
-                Employees: 24,
-            },
         ],
     },
 ];
@@ -722,7 +391,7 @@ const chartConfig = {
                                 key={`cell-${index}`}
                                 fill={
                                     colorPalette.pieColors[
-                                        index % colorPalette.pieColors.length
+                                    index % colorPalette.pieColors.length
                                     ]
                                 }
                             />
@@ -792,20 +461,16 @@ const DashboardEditor = () => {
     const [dashboardTitle, setDashboardTitle] = useState(
         isNewDashboard ? "New Dashboard" : "Dashboard Title"
     );
-    const [selectedElement, setSelectedElement] =
-        useState<DashboardItem | null>(null);
+    const [selectedElement, setSelectedElement] = useState<DashboardItem | null>(null);
     const [dashboardItems, setDashboardItems] = useState<DashboardItem[]>([]);
-    const [selectedDataSource, setSelectedDataSource] = useState<string | null>(
-        null
-    );
+    const [selectedDataSource, setSelectedDataSource] = useState<string | null>(null);
     const [previewData, setPreviewData] = useState<any[]>([]);
     const [currentTab, setCurrentTab] = useState<"charts" | "data">("charts");
     const [draggedItem, setDraggedItem] = useState<{
         type: string;
         dataSourceId?: string;
     } | null>(null);
-    const [selectedColorPalette, setSelectedColorPalette] =
-        useState<string>("default");
+    const [selectedColorPalette, setSelectedColorPalette] = useState<string>("default");
     const canvasRef = useRef<HTMLDivElement>(null);
     const [isMoving, setIsMoving] = useState(false);
     const [moveOffset, setMoveOffset] = useState({ x: 0, y: 0 });
@@ -824,9 +489,7 @@ const DashboardEditor = () => {
         value?: string;
         series?: string;
     }>({});
-    const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(
-        null
-    );
+    const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
     const [chartOptions, setChartOptions] = useState({
         categoryField: "",
         valueField: "",
@@ -834,6 +497,11 @@ const DashboardEditor = () => {
         aggregation: "sum",
         timeInterval: "month",
     });
+    const [hasChanges, setHasChanges] = useState(false);
+    const [initialState, setInitialState] = useState<{
+        title: string;
+        items: DashboardItem[];
+    } | null>(null);
 
     const form = useForm({
         defaultValues: {
@@ -955,7 +623,7 @@ const DashboardEditor = () => {
                 // Create a new dashboard item
                 const currentPalette =
                     colorPalettes[
-                        selectedColorPalette as keyof typeof colorPalettes
+                    selectedColorPalette as keyof typeof colorPalettes
                     ];
                 const newWidth = 400;
                 const newHeight = 300;
@@ -970,10 +638,9 @@ const DashboardEditor = () => {
                     y: newY,
                     width: newWidth,
                     height: newHeight,
-                    title: `${
-                        chartConfig[chartType as keyof typeof chartConfig]
+                    title: `${chartConfig[chartType as keyof typeof chartConfig]
                             ?.name || "Chart"
-                    }`,
+                        }`,
                     dataSourceId: null,
                     chartOptions: {
                         ...(chartConfig[chartType as keyof typeof chartConfig]
@@ -997,9 +664,8 @@ const DashboardEditor = () => {
                     const updatedItem = {
                         ...selectedElement,
                         dataSourceId,
-                        title: `${selectedElement.title} - ${
-                            datasets.find((ds) => ds.id === dataSourceId)?.name
-                        }`,
+                        title: `${selectedElement.title} - ${datasets.find((ds) => ds.id === dataSourceId)?.name
+                            }`,
                     };
 
                     setDashboardItems((prev) =>
@@ -1026,7 +692,7 @@ const DashboardEditor = () => {
                     );
                     const currentPalette =
                         colorPalettes[
-                            selectedColorPalette as keyof typeof colorPalettes
+                        selectedColorPalette as keyof typeof colorPalettes
                         ];
                     const newWidth = 400;
                     const newHeight = 300;
@@ -1207,11 +873,10 @@ const DashboardEditor = () => {
             const updatedItem = {
                 ...selectedElement,
                 dataSourceId: dataset.datasetId.toString(),
-                title: `${
-                    chartConfig[
+                title: `${chartConfig[
                         selectedElement.type as keyof typeof chartConfig
                     ]?.name || "Chart"
-                } - ${dataset.datasetName}`,
+                    } - ${dataset.datasetName}`,
                 chartOptions: {
                     ...selectedElement.chartOptions,
                     categoryField: undefined,
@@ -1252,67 +917,64 @@ const DashboardEditor = () => {
     ) => {
         if (!selectedElement) return;
 
-        // Update selected fields
-        setSelectedFields((prev) => ({
-            ...prev,
-            [fieldType]: fieldName,
-        }));
-
-        // Update chart options based on selected fields
-        const updatedOptions = {
-            ...selectedElement.chartOptions,
-            [`${fieldType}Field`]: fieldName,
-            ...(options?.aggregation && { aggregation: options.aggregation }),
-            ...(options?.timeInterval && {
-                timeInterval: options.timeInterval,
-            }),
-        };
-
-        // Update the selected element with new chart options
-        const updatedItem = {
+        const updatedElement = {
             ...selectedElement,
-            chartOptions: updatedOptions,
+            chartOptions: {
+                ...selectedElement.chartOptions,
+                [fieldType === "category" ? "categoryField" : fieldType === "value" ? "valueField" : "seriesField"]: fieldName,
+                ...(options?.aggregation && { aggregation: options.aggregation }),
+                ...(options?.timeInterval && { timeInterval: options.timeInterval }),
+            },
         };
 
+        setSelectedElement(updatedElement);
         setDashboardItems((prev) =>
             prev.map((item) =>
-                item.id === selectedElement.id ? updatedItem : item
+                item.id === selectedElement.id ? updatedElement : item
             )
         );
-        setSelectedElement(updatedItem);
+    };
+
+    const handleAggregationChange = (newAggregation: string) => {
+        if (!selectedElement) return;
+
+        const updatedElement = {
+            ...selectedElement,
+            chartOptions: {
+                ...selectedElement.chartOptions,
+                aggregation: newAggregation as "sum" | "avg" | "count" | "min" | "max",
+            },
+        };
+
+        setSelectedElement(updatedElement);
+        setDashboardItems((prev) =>
+            prev.map((item) =>
+                item.id === selectedElement.id ? updatedElement : item
+            )
+        );
     };
 
     const handleApply = async () => {
-        if (
-            !selectedDataset ||
-            !selectedFields.category ||
-            !selectedFields.value
-        ) {
-            console.log("Missing required fields:", {
-                selectedDataset,
-                selectedFields,
-            });
-            return;
-        }
+        if (!selectedElement) return;
 
         try {
             console.log("Calling API with params:", {
                 datasetId: selectedDataset.datasetId,
-                categoryField: selectedFields.category,
-                valueField: selectedFields.value,
-                seriesField: selectedFields.series,
-                aggregation: chartOptions.aggregation || "sum",
-                timeInterval: chartOptions.timeInterval,
+                categoryField: selectedElement.chartOptions.categoryField,
+                valueField: selectedElement.chartOptions.valueField,
+                seriesField: selectedElement.chartOptions.seriesField,
+                aggregation: selectedElement.chartOptions.aggregation || "sum",
+                timeInterval: selectedElement.chartOptions.timeInterval,
             });
 
             const response = await datasetService.aggregateDataset(
                 selectedDataset.datasetId,
                 {
-                    categoryField: selectedFields.category,
-                    valueField: selectedFields.value,
-                    seriesField: selectedFields.series,
-                    aggregation: chartOptions.aggregation || "sum",
-                    timeInterval: chartOptions.timeInterval,
+                    categoryField: selectedElement.chartOptions.categoryField,
+                    valueField: selectedElement.chartOptions.valueField,
+                    seriesField: selectedElement.chartOptions.seriesField,
+                    aggregation: selectedElement.chartOptions.aggregation || "sum",
+                    timeInterval: selectedElement.chartOptions.timeInterval,
                 }
             );
 
@@ -1460,8 +1122,62 @@ const DashboardEditor = () => {
     };
 
     // Handle save of dashboard
-    const handleSaveDashboard = () => {
-        customToast.success("Dashboard saved successfully!");
+    const handleSaveDashboard = async () => {
+        try {
+            const dashboardData = {
+                title: dashboardTitle,
+                items: dashboardItems.map((item) => ({
+                    id: item.id ? parseInt(item.id) : null,
+                    type: item.type,
+                    x: item.x || 0,
+                    y: item.y || 0,
+                    width: item.width || 400,
+                    height: item.height || 300,
+                    title: item.title || "Untitled Chart",
+                    dataSourceId: item.dataSourceId || null,
+                    chartOptions: JSON.stringify({
+                        showGrid: item.chartOptions?.showGrid ?? false,
+                        showLegend: item.chartOptions?.showLegend ?? false,
+                        barColor: item.chartOptions?.barColor || "#4F6BED",
+                        lineColor: item.chartOptions?.lineColor || "#FF8961",
+                        showDots: item.chartOptions?.showDots ?? false,
+                        innerRadius: item.chartOptions?.innerRadius || 0,
+                        outerRadius: item.chartOptions?.outerRadius || 80,
+                        categoryField: item.chartOptions?.categoryField || "",
+                        valueField: item.chartOptions?.valueField || "",
+                        seriesField: item.chartOptions?.seriesField || "",
+                        aggregation: item.chartOptions?.aggregation || "sum",
+                        timeInterval: item.chartOptions?.timeInterval || "month"
+                    }),
+                    backgroundColor: item.backgroundColor || "#ffffff",
+                    borderColor: item.borderColor || "#e5e7eb"
+                }))
+            };
+
+            if (isNewDashboard) {
+                const response = await dashboardService.createDashboard(dashboardData);
+                customToast.success("Dashboard created successfully!");
+                setInitialState({
+                    title: dashboardTitle,
+                    items: dashboardItems
+                });
+                navigate(`/dashboard/edit/${response.dashboardId}`);
+            } else {
+                await dashboardService.updateDashboard({
+                    id: parseInt(id),
+                    ...dashboardData,
+                });
+                customToast.success("Dashboard updated successfully");
+                setInitialState({
+                    title: dashboardTitle,
+                    items: dashboardItems
+                });
+            }
+            setHasChanges(false);
+        } catch (error) {
+            console.error("Error saving dashboard:", error);
+            customToast.error("Failed to save dashboard");
+        }
     };
 
     // Preview the dashboard
@@ -1469,7 +1185,7 @@ const DashboardEditor = () => {
         if (id && id !== "new") {
             navigate(`/dashboard/${id}`);
         } else {
-            customToast.info("Save the dashboard first before previewing");
+            customToast.info("Please save the dashboard first before previewing");
         }
     };
 
@@ -1484,9 +1200,9 @@ const DashboardEditor = () => {
         // Create chart data in the same format as the test chart
         const chartData = item.chartOptions?.data
             ? item.chartOptions.data.categories.map((category, index) => ({
-                  name: category,
-                  value: item.chartOptions.data.values[index],
-              }))
+                name: category,
+                value: item.chartOptions.data.values[index],
+            }))
             : [];
 
         console.log("Chart Data Structure:", {
@@ -1606,8 +1322,8 @@ const DashboardEditor = () => {
                                             key={`cell-${index}`}
                                             fill={
                                                 palette.pieColors[
-                                                    index %
-                                                        palette.pieColors.length
+                                                index %
+                                                palette.pieColors.length
                                                 ]
                                             }
                                         />
@@ -1666,8 +1382,8 @@ const DashboardEditor = () => {
                         dataset.sourceType === "csv"
                             ? FileText
                             : dataset.sourceType === "excel"
-                            ? FileSpreadsheet
-                            : FileChartLine,
+                                ? FileSpreadsheet
+                                : FileChartLine,
                 }));
 
                 setDatasets((prev) =>
@@ -1720,8 +1436,8 @@ const DashboardEditor = () => {
                             dataset.sourceType === "csv"
                                 ? FileText
                                 : dataset.sourceType === "excel"
-                                ? FileSpreadsheet
-                                : FileChartLine,
+                                    ? FileSpreadsheet
+                                    : FileChartLine,
                     }));
 
                     setDatasets((prev) => [...prev, ...formattedDatasets]);
@@ -1737,6 +1453,138 @@ const DashboardEditor = () => {
             fetchDatasets();
         }
     };
+
+    // Load dashboard data and datasets when component mounts
+    useEffect(() => {
+        const loadDashboardAndDatasets = async () => {
+            try {
+                // Load datasets first
+                const datasetsResponse = await datasetService.getDatasets();
+                setDatasets(datasetsResponse.items);
+                setHasMoreDatasets(datasetsResponse.hasNextPage);
+
+                // If not new dashboard, load dashboard data
+                if (!isNewDashboard && id) {
+                    const response = await dashboardService.getDashboard(parseInt(id));
+                    setDashboardTitle(response.title);
+                    
+                    // Parse chartOptions từ JSON string thành object
+                    const items = response.items.map(item => ({
+                        ...item,
+                        chartOptions: item.chartOptions ? JSON.parse(item.chartOptions) : {}
+                    }));
+                    
+                    setDashboardItems(items);
+                    // Lưu trạng thái ban đầu
+                    setInitialState({
+                        title: response.title,
+                        items: items
+                    });
+
+                    // Load data for each chart
+                    for (const item of items) {
+                        if (item.dataSourceId) {
+                            try {
+                                const dataset = datasetsResponse.items.find(d => d.datasetId.toString() === item.dataSourceId);
+                                if (dataset) {
+                                    const response = await datasetService.aggregateDataset(
+                                        dataset.datasetId,
+                                        {
+                                            categoryField: item.chartOptions.categoryField,
+                                            valueField: item.chartOptions.valueField,
+                                            seriesField: item.chartOptions.seriesField,
+                                            aggregation: item.chartOptions.aggregation || "sum",
+                                            timeInterval: item.chartOptions.timeInterval || "month"
+                                        }
+                                    );
+
+                                    // Update chart data
+                                    setDashboardItems(prev => prev.map(chart => {
+                                        if (chart.id === item.id) {
+                                            return {
+                                                ...chart,
+                                                chartOptions: {
+                                                    ...chart.chartOptions,
+                                                    data: {
+                                                        categories: response.categories,
+                                                        values: response.values,
+                                                        series: response.series
+                                                    }
+                                                }
+                                            };
+                                        }
+                                        return chart;
+                                    }));
+                                }
+                            } catch (error) {
+                                console.error(`Error loading data for chart ${item.id}:`, error);
+                            }
+                        }
+                    }
+                } else {
+                    // Nếu là dashboard mới, set initialState là null
+                    setInitialState(null);
+                }
+            } catch (error) {
+                console.error("Error loading dashboard:", error);
+                customToast.error("Failed to load dashboard");
+            }
+        };
+
+        loadDashboardAndDatasets();
+    }, [id, isNewDashboard]);
+
+    // Kiểm tra sự thay đổi
+    useEffect(() => {
+        if (isNewDashboard) {
+            setHasChanges(dashboardTitle.trim() !== "" && dashboardItems.length > 0);
+        } else if (initialState) {
+            const hasTitleChanged = dashboardTitle.trim() !== initialState.title.trim();
+            
+            const hasItemsChanged = dashboardItems.length !== initialState.items.length ||
+                dashboardItems.some((item, index) => {
+                    const initialItem = initialState.items[index];
+                    if (!initialItem) return true;
+                    
+                    // So sánh các thuộc tính cơ bản
+                    const basicPropsChanged = 
+                        item.type !== initialItem.type ||
+                        item.x !== initialItem.x ||
+                        item.y !== initialItem.y ||
+                        item.width !== initialItem.width ||
+                        item.height !== initialItem.height ||
+                        item.title !== initialItem.title ||
+                        item.dataSourceId !== initialItem.dataSourceId ||
+                        item.backgroundColor !== initialItem.backgroundColor ||
+                        item.borderColor !== initialItem.borderColor;
+
+                    if (basicPropsChanged) return true;
+
+                    // So sánh chartOptions
+                    if (!item.chartOptions && !initialItem.chartOptions) return false;
+                    if (!item.chartOptions || !initialItem.chartOptions) return true;
+
+                    // So sánh từng thuộc tính của chartOptions
+                    const chartOptionsChanged = 
+                        item.chartOptions.showGrid !== initialItem.chartOptions.showGrid ||
+                        item.chartOptions.showLegend !== initialItem.chartOptions.showLegend ||
+                        item.chartOptions.barColor !== initialItem.chartOptions.barColor ||
+                        item.chartOptions.lineColor !== initialItem.chartOptions.lineColor ||
+                        item.chartOptions.showDots !== initialItem.chartOptions.showDots ||
+                        item.chartOptions.innerRadius !== initialItem.chartOptions.innerRadius ||
+                        item.chartOptions.outerRadius !== initialItem.chartOptions.outerRadius ||
+                        item.chartOptions.categoryField !== initialItem.chartOptions.categoryField ||
+                        item.chartOptions.valueField !== initialItem.chartOptions.valueField ||
+                        item.chartOptions.seriesField !== initialItem.chartOptions.seriesField ||
+                        item.chartOptions.aggregation !== initialItem.chartOptions.aggregation ||
+                        item.chartOptions.timeInterval !== initialItem.chartOptions.timeInterval;
+
+                    return chartOptionsChanged;
+                });
+
+            setHasChanges(hasTitleChanged || hasItemsChanged);
+        }
+    }, [dashboardTitle, dashboardItems, initialState, isNewDashboard]);
 
     return (
         <div className="flex h-[calc(100vh-8rem)] overflow-hidden border rounded-lg">
@@ -1805,12 +1653,11 @@ const DashboardEditor = () => {
                                                 ([name, palette]) => (
                                                     <button
                                                         key={name}
-                                                        className={`p-2 border rounded-md transition-all ${
-                                                            selectedColorPalette ===
-                                                            name
+                                                        className={`p-2 border rounded-md transition-all ${selectedColorPalette ===
+                                                                name
                                                                 ? "ring-2 ring-primary border-primary"
                                                                 : "hover:bg-muted/50"
-                                                        }`}
+                                                            }`}
                                                         onClick={() =>
                                                             handleColorPaletteChange(
                                                                 name
@@ -1875,12 +1722,11 @@ const DashboardEditor = () => {
                                                 {datasets.map((dataset) => (
                                                     <div
                                                         key={dataset.datasetId}
-                                                        className={`flex flex-col gap-3 p-3 border rounded-md transition-colors ${
-                                                            selectedElement.dataSourceId ===
-                                                            dataset.datasetId.toString()
+                                                        className={`flex flex-col gap-3 p-3 border rounded-md transition-colors ${selectedElement.dataSourceId ===
+                                                                dataset.datasetId.toString()
                                                                 ? "bg-muted/50 border-primary"
                                                                 : "hover:bg-muted/50"
-                                                        }`}
+                                                            }`}
                                                         onClick={() =>
                                                             handleDatasetSelect(
                                                                 dataset
@@ -1909,35 +1755,26 @@ const DashboardEditor = () => {
 
                                                         {selectedElement.dataSourceId ===
                                                             dataset.datasetId.toString() && (
-                                                            <div className="mt-2 border-t pt-2">
-                                                                <DataFieldSelector
-                                                                    dataset={
-                                                                        dataset
-                                                                    }
-                                                                    selectedFields={{
-                                                                        category:
+                                                                <div className="mt-2 border-t pt-2">
+                                                                    <DataFieldSelector
+                                                                        dataset={
+                                                                            dataset
+                                                                        }
+                                                                        selectedElement={
                                                                             selectedElement
-                                                                                .chartOptions
-                                                                                ?.categoryField,
-                                                                        value: selectedElement
-                                                                            .chartOptions
-                                                                            ?.valueField,
-                                                                        series: selectedElement
-                                                                            .chartOptions
-                                                                            ?.seriesField,
-                                                                    }}
-                                                                    onFieldSelect={
-                                                                        handleFieldSelect
-                                                                    }
-                                                                    onApply={
-                                                                        handleApply
-                                                                    }
-                                                                    chartType={
-                                                                        selectedElement.type
-                                                                    }
-                                                                />
-                                                            </div>
-                                                        )}
+                                                                        }
+                                                                        onFieldSelect={
+                                                                            handleFieldSelect
+                                                                        }
+                                                                        onAggregationChange={
+                                                                            handleAggregationChange
+                                                                        }
+                                                                        onApply={
+                                                                            handleApply
+                                                                        }
+                                                                    />
+                                                                </div>
+                                                            )}
                                                     </div>
                                                 ))}
                                                 {isLoadingDatasets && (
@@ -1979,6 +1816,7 @@ const DashboardEditor = () => {
                                     variant="outline"
                                     size="sm"
                                     onClick={handleSaveDashboard}
+                                    disabled={!hasChanges}
                                 >
                                     <Save className="h-4 w-4 mr-2" /> Save
                                 </Button>
@@ -2121,36 +1959,36 @@ const DashboardEditor = () => {
 
                                             {selectedElement.type ===
                                                 "line" && (
-                                                <>
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="lineColor"
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <div className="flex justify-between">
-                                                                    <FormLabel>
-                                                                        Line
-                                                                        Color
-                                                                    </FormLabel>
-                                                                    <div
-                                                                        className="w-5 h-5 rounded-full border"
-                                                                        style={{
-                                                                            backgroundColor:
-                                                                                field.value,
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                                <FormControl>
-                                                                    <Input
-                                                                        {...field}
-                                                                        type="color"
-                                                                    />
-                                                                </FormControl>
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                </>
-                                            )}
+                                                    <>
+                                                        <FormField
+                                                            control={form.control}
+                                                            name="lineColor"
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <div className="flex justify-between">
+                                                                        <FormLabel>
+                                                                            Line
+                                                                            Color
+                                                                        </FormLabel>
+                                                                        <div
+                                                                            className="w-5 h-5 rounded-full border"
+                                                                            style={{
+                                                                                backgroundColor:
+                                                                                    field.value,
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            {...field}
+                                                                            type="color"
+                                                                        />
+                                                                    </FormControl>
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </>
+                                                )}
 
                                             {selectedElement.type === "pie" && (
                                                 <>
@@ -2332,8 +2170,8 @@ const DashboardEditor = () => {
             {/* Import Data Modal */}
             <ImportDataModal
                 open={importModalOpen}
-                onClose={() => setImportModalOpen(false)}
-                onImport={handleDataImported}
+                onOpenChange={() => setImportModalOpen(false)}
+                onDataImported={handleDataImported}
             />
         </div>
     );
