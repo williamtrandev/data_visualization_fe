@@ -21,14 +21,11 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { customToast } from "@/lib/toast";
+import { DashboardItem } from "@/types/dashboard";
 
 interface DataFieldSelectorProps {
     dataset: Dataset;
-    selectedFields: {
-        category?: string;
-        value?: string;
-        series?: string;
-    };
+    selectedElement: DashboardItem;
     onFieldSelect: (
         fieldType: "category" | "value" | "series",
         fieldName: string,
@@ -37,60 +34,32 @@ interface DataFieldSelectorProps {
             timeInterval?: "day" | "week" | "month" | "quarter" | "year";
         }
     ) => void;
+    onAggregationChange: (newAggregation: string) => void;
     onApply: () => void;
-    chartType: string;
 }
 
 const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
     dataset,
-    selectedFields,
+    selectedElement,
     onFieldSelect,
+    onAggregationChange,
     onApply,
-    chartType,
 }) => {
-    const [aggregation, setAggregation] = React.useState<
-        "sum" | "avg" | "count" | "min" | "max"
-    >("sum");
-    const [timeInterval, setTimeInterval] = React.useState<
-        "day" | "week" | "month" | "quarter" | "year"
-    >("month");
-
-    // Local state for selected fields
-    const [localSelectedFields, setLocalSelectedFields] = React.useState({
-        category: selectedFields.category || "",
-        value: selectedFields.value || "",
-        series: selectedFields.series || "",
-    });
-
-    // Update local state when props change
-    React.useEffect(() => {
-        console.log("Props changed - selectedFields:", selectedFields);
-        setLocalSelectedFields({
-            category: selectedFields.category || "",
-            value: selectedFields.value || "",
-            series: selectedFields.series || "",
-        });
-    }, [selectedFields]);
+    const chartType = selectedElement.type;
+    const chartOptions = selectedElement.chartOptions;
 
     const handleFieldSelect = (
         fieldType: "category" | "value" | "series",
         value: string
     ) => {
         console.log("handleFieldSelect called with:", { fieldType, value });
-        console.log("Current localSelectedFields:", localSelectedFields);
-
-        // Update local state first
-        setLocalSelectedFields((prev) => ({
-            ...prev,
-            [fieldType]: value,
-        }));
 
         // Then call parent's onFieldSelect with current options
         onFieldSelect(fieldType, value, {
-            aggregation: fieldType === "value" ? aggregation : undefined,
+            aggregation: fieldType === "value" ? chartOptions.aggregation : undefined,
             timeInterval:
                 fieldType === "category" && chartType === "line"
-                    ? timeInterval
+                    ? chartOptions.timeInterval
                     : undefined,
         });
     };
@@ -133,26 +102,11 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                 X-Axis (Category)
                             </h4>
                             <Select
-                                defaultValue={localSelectedFields.category}
-                                value={localSelectedFields.category}
-                                onValueChange={(value) => {
-                                    console.log(
-                                        "Category Select onValueChange:",
-                                        value
-                                    );
-                                    handleFieldSelect("category", value);
-                                }}
+                                value={chartOptions.categoryField}
+                                onValueChange={(value) => handleFieldSelect("category", value)}
                             >
                                 <SelectTrigger className="w-full">
-                                    <SelectValue>
-                                        {localSelectedFields.category
-                                            ? dataset.columns.find(
-                                                  (col) =>
-                                                      col.columnName ===
-                                                      localSelectedFields.category
-                                              )?.displayName
-                                            : "Select category field"}
-                                    </SelectValue>
+                                    <SelectValue placeholder="Select category field" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {dataset.columns.map((column) => (
@@ -162,13 +116,9 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                         >
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs">
-                                                    {getFieldIcon(
-                                                        column.dataType
-                                                    )}
+                                                    {getFieldIcon(column.dataType)}
                                                 </span>
-                                                <span>
-                                                    {column.displayName}
-                                                </span>
+                                                <span>{column.displayName}</span>
                                             </div>
                                         </SelectItem>
                                     ))}
@@ -182,83 +132,44 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                             </h4>
                             <div className="space-y-2">
                                 <div className="flex items-center gap-2">
-                                    <Label className="text-xs">
-                                        Aggregation:
-                                    </Label>
+                                    <Label className="text-xs">Aggregation:</Label>
                                     <Select
-                                        value={aggregation}
-                                        onValueChange={(value: any) => {
-                                            console.log(
-                                                "Aggregation changed:",
-                                                value
-                                            );
-                                            setAggregation(value);
-                                        }}
+                                        value={chartOptions.aggregation || "sum"}
+                                        onValueChange={(value: any) => onAggregationChange(value)}
                                     >
                                         <SelectTrigger className="h-8">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="sum">
-                                                Sum
-                                            </SelectItem>
-                                            <SelectItem value="avg">
-                                                Average
-                                            </SelectItem>
-                                            <SelectItem value="count">
-                                                Count
-                                            </SelectItem>
-                                            <SelectItem value="min">
-                                                Minimum
-                                            </SelectItem>
-                                            <SelectItem value="max">
-                                                Maximum
-                                            </SelectItem>
+                                            <SelectItem value="sum">Sum</SelectItem>
+                                            <SelectItem value="avg">Average</SelectItem>
+                                            <SelectItem value="count">Count</SelectItem>
+                                            <SelectItem value="min">Minimum</SelectItem>
+                                            <SelectItem value="max">Maximum</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <Select
-                                    defaultValue={localSelectedFields.value}
-                                    value={localSelectedFields.value}
-                                    onValueChange={(value) => {
-                                        console.log(
-                                            "Value Select onValueChange:",
-                                            value
-                                        );
-                                        handleFieldSelect("value", value);
-                                    }}
+                                    value={chartOptions.valueField}
+                                    onValueChange={(value) => handleFieldSelect("value", value)}
                                 >
                                     <SelectTrigger className="w-full">
-                                        <SelectValue>
-                                            {localSelectedFields.value
-                                                ? dataset.columns.find(
-                                                      (col) =>
-                                                          col.columnName ===
-                                                          localSelectedFields.value
-                                                  )?.displayName
-                                                : "Select value field"}
-                                        </SelectValue>
+                                        <SelectValue placeholder="Select value field" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {dataset.columns
-                                            .filter(isNumericField)
-                                            .map((column) => (
-                                                <SelectItem
-                                                    key={column.columnName}
-                                                    value={column.columnName}
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-xs">
-                                                            {getFieldIcon(
-                                                                column.dataType
-                                                            )}
-                                                        </span>
-                                                        <span>
-                                                            {column.displayName}
-                                                        </span>
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
+                                        {dataset.columns.map((column) => (
+                                            <SelectItem
+                                                key={column.columnName}
+                                                value={column.columnName}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs">
+                                                        {getFieldIcon(column.dataType)}
+                                                    </span>
+                                                    <span>{column.displayName}</span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -269,26 +180,11 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                 Group (Optional)
                             </h4>
                             <Select
-                                defaultValue={localSelectedFields.series}
-                                value={localSelectedFields.series}
-                                onValueChange={(value) => {
-                                    console.log(
-                                        "Series Select onValueChange:",
-                                        value
-                                    );
-                                    handleFieldSelect("series", value);
-                                }}
+                                value={chartOptions.seriesField}
+                                onValueChange={(value) => handleFieldSelect("series", value)}
                             >
                                 <SelectTrigger className="w-full">
-                                    <SelectValue>
-                                        {localSelectedFields.series
-                                            ? dataset.columns.find(
-                                                  (col) =>
-                                                      col.columnName ===
-                                                      localSelectedFields.series
-                                              )?.displayName
-                                            : "Select group field"}
-                                    </SelectValue>
+                                    <SelectValue placeholder="Select group field" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {dataset.columns.map((column) => (
@@ -298,13 +194,9 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                         >
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs">
-                                                    {getFieldIcon(
-                                                        column.dataType
-                                                    )}
+                                                    {getFieldIcon(column.dataType)}
                                                 </span>
-                                                <span>
-                                                    {column.displayName}
-                                                </span>
+                                                <span>{column.displayName}</span>
                                             </div>
                                         </SelectItem>
                                     ))}
@@ -316,16 +208,9 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                             className="w-full"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                console.log(
-                                    "Apply button clicked with fields:",
-                                    localSelectedFields
-                                );
                                 handleApply(e);
                             }}
-                            disabled={
-                                !localSelectedFields.category ||
-                                !localSelectedFields.value
-                            }
+                            disabled={!chartOptions.categoryField || !chartOptions.valueField}
                         >
                             Apply
                         </Button>
@@ -344,10 +229,8 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                         Time Interval:
                                     </Label>
                                     <Select
-                                        value={timeInterval}
-                                        onValueChange={(value: any) =>
-                                            setTimeInterval(value)
-                                        }
+                                        value={chartOptions.timeInterval || "month"}
+                                        onValueChange={(value: any) => onAggregationChange(value)}
                                     >
                                         <SelectTrigger className="h-8">
                                             <SelectValue />
@@ -372,10 +255,8 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                     </Select>
                                 </div>
                                 <Select
-                                    value={localSelectedFields.category}
-                                    onValueChange={(value) =>
-                                        handleFieldSelect("category", value)
-                                    }
+                                    value={chartOptions.categoryField}
+                                    onValueChange={(value) => handleFieldSelect("category", value)}
                                 >
                                     <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select time field" />
@@ -388,13 +269,9 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs">
-                                                        {getFieldIcon(
-                                                            column.dataType
-                                                        )}
+                                                        {getFieldIcon(column.dataType)}
                                                     </span>
-                                                    <span>
-                                                        {column.displayName}
-                                                    </span>
+                                                    <span>{column.displayName}</span>
                                                 </div>
                                             </SelectItem>
                                         ))}
@@ -412,10 +289,8 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                         Aggregation:
                                     </Label>
                                     <Select
-                                        value={aggregation}
-                                        onValueChange={(value: any) =>
-                                            setAggregation(value)
-                                        }
+                                        value={chartOptions.aggregation || "sum"}
+                                        onValueChange={(value: any) => onAggregationChange(value)}
                                     >
                                         <SelectTrigger className="h-8">
                                             <SelectValue />
@@ -440,17 +315,15 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                     </Select>
                                 </div>
                                 <Select
-                                    value={localSelectedFields.value}
-                                    onValueChange={(value) =>
-                                        handleFieldSelect("value", value)
-                                    }
+                                    value={chartOptions.valueField}
+                                    onValueChange={(value) => handleFieldSelect("value", value)}
                                 >
                                     <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select value field" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {dataset.columns
-                                            .filter(isNumericField)
+                                            // .filter(isNumericField)
                                             .map((column) => (
                                                 <SelectItem
                                                     key={column.columnName}
@@ -458,13 +331,9 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                                 >
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-xs">
-                                                            {getFieldIcon(
-                                                                column.dataType
-                                                            )}
+                                                            {getFieldIcon(column.dataType)}
                                                         </span>
-                                                        <span>
-                                                            {column.displayName}
-                                                        </span>
+                                                        <span>{column.displayName}</span>
                                                     </div>
                                                 </SelectItem>
                                             ))}
@@ -477,10 +346,8 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                 Group (Optional)
                             </h4>
                             <Select
-                                value={localSelectedFields.series}
-                                onValueChange={(value) =>
-                                    handleFieldSelect("series", value)
-                                }
+                                value={chartOptions.seriesField}
+                                onValueChange={(value) => handleFieldSelect("series", value)}
                             >
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Select group field" />
@@ -493,13 +360,9 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                         >
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs">
-                                                    {getFieldIcon(
-                                                        column.dataType
-                                                    )}
+                                                    {getFieldIcon(column.dataType)}
                                                 </span>
-                                                <span>
-                                                    {column.displayName}
-                                                </span>
+                                                <span>{column.displayName}</span>
                                             </div>
                                         </SelectItem>
                                     ))}
@@ -510,16 +373,9 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                             className="w-full"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                console.log(
-                                    "Apply button clicked with fields:",
-                                    localSelectedFields
-                                );
                                 handleApply(e);
                             }}
-                            disabled={
-                                !localSelectedFields.category ||
-                                !localSelectedFields.value
-                            }
+                            disabled={!chartOptions.categoryField || !chartOptions.valueField}
                         >
                             Apply
                         </Button>
@@ -531,10 +387,8 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                         <div>
                             <h4 className="text-sm font-medium mb-2">Label</h4>
                             <Select
-                                value={localSelectedFields.category}
-                                onValueChange={(value) =>
-                                    handleFieldSelect("category", value)
-                                }
+                                value={chartOptions.categoryField}
+                                onValueChange={(value) => handleFieldSelect("category", value)}
                             >
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Select label field" />
@@ -547,13 +401,9 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                         >
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs">
-                                                    {getFieldIcon(
-                                                        column.dataType
-                                                    )}
+                                                    {getFieldIcon(column.dataType)}
                                                 </span>
-                                                <span>
-                                                    {column.displayName}
-                                                </span>
+                                                <span>{column.displayName}</span>
                                             </div>
                                         </SelectItem>
                                     ))}
@@ -568,10 +418,8 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                         Aggregation:
                                     </Label>
                                     <Select
-                                        value={aggregation}
-                                        onValueChange={(value: any) =>
-                                            setAggregation(value)
-                                        }
+                                        value={chartOptions.aggregation || "sum"}
+                                        onValueChange={(value: any) => onAggregationChange(value)}
                                     >
                                         <SelectTrigger className="h-8">
                                             <SelectValue />
@@ -596,17 +444,15 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                     </Select>
                                 </div>
                                 <Select
-                                    value={localSelectedFields.value}
-                                    onValueChange={(value) =>
-                                        handleFieldSelect("value", value)
-                                    }
+                                    value={chartOptions.valueField}
+                                    onValueChange={(value) => handleFieldSelect("value", value)}
                                 >
                                     <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select value field" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {dataset.columns
-                                            .filter(isNumericField)
+                                            // .filter(isNumericField)
                                             .map((column) => (
                                                 <SelectItem
                                                     key={column.columnName}
@@ -614,13 +460,9 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                                                 >
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-xs">
-                                                            {getFieldIcon(
-                                                                column.dataType
-                                                            )}
+                                                            {getFieldIcon(column.dataType)}
                                                         </span>
-                                                        <span>
-                                                            {column.displayName}
-                                                        </span>
+                                                        <span>{column.displayName}</span>
                                                     </div>
                                                 </SelectItem>
                                             ))}
@@ -632,16 +474,9 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
                             className="w-full"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                console.log(
-                                    "Apply button clicked with fields:",
-                                    localSelectedFields
-                                );
                                 handleApply(e);
                             }}
-                            disabled={
-                                !localSelectedFields.category ||
-                                !localSelectedFields.value
-                            }
+                            disabled={!chartOptions.categoryField || !chartOptions.valueField}
                         >
                             Apply
                         </Button>
@@ -654,7 +489,7 @@ const DataFieldSelector: React.FC<DataFieldSelectorProps> = ({
 
     const handleApply = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!selectedFields.category || !selectedFields.value) {
+        if (!chartOptions.categoryField || !chartOptions.valueField) {
             customToast.error("Please select required fields");
             return;
         }

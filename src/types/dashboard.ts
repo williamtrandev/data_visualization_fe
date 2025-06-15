@@ -10,7 +10,8 @@ export interface ChartOptions {
     categoryField?: string;
     valueField?: string;
     seriesField?: string;
-    aggregation?: "sum" | "average" | "count" | "min" | "max";
+    aggregation?: "sum" | "avg" | "count" | "min" | "max";
+    timeInterval?: "day" | "week" | "month" | "quarter" | "year";
 }
 
 export interface DashboardItem {

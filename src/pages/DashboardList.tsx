@@ -1,54 +1,10 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Plus, Filter, BarChart, PieChart, LineChart, Table } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-
-// Mock data for dashboards
-const mockDashboards = [
-  {
-    id: '1',
-    title: 'Sales Performance',
-    description: 'Monthly sales metrics and performance indicators',
-    creator: 'John Doe',
-    updatedAt: '2025-04-28',
-    tags: ['sales', 'finance'],
-    chartCount: 8,
-    thumbnail: 'bar'
-  },
-  {
-    id: '2',
-    title: 'Marketing Campaign Analysis',
-    description: 'Campaign performance metrics and ROI analysis',
-    creator: 'Jane Smith',
-    updatedAt: '2025-05-01',
-    tags: ['marketing', 'social'],
-    chartCount: 5,
-    thumbnail: 'pie'
-  },
-  {
-    id: '3',
-    title: 'Customer Satisfaction',
-    description: 'Customer feedback and satisfaction metrics',
-    creator: 'Alex Wong',
-    updatedAt: '2025-04-25',
-    tags: ['customer', 'service'],
-    chartCount: 6,
-    thumbnail: 'line'
-  },
-  {
-    id: '4',
-    title: 'Inventory Management',
-    description: 'Stock levels and inventory turnover metrics',
-    creator: 'Sarah Johnson',
-    updatedAt: '2025-04-30',
-    tags: ['inventory', 'operations'],
-    chartCount: 4,
-    thumbnail: 'table'
-  }
-];
+import { dashboardService, DashboardListItem } from '@/services/dashboardService';
 
 const getThumbnailIcon = (type: string) => {
   switch (type) {
@@ -67,10 +23,37 @@ const getThumbnailIcon = (type: string) => {
 
 const DashboardList = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [dashboards, setDashboards] = useState<DashboardListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDashboards = async () => {
+      try {
+        const data = await dashboardService.getDashboards();
+        setDashboards(data);
+      } catch (err) {
+        setError('Failed to fetch dashboards');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboards();
+  }, []);
   
-  const filteredDashboards = mockDashboards.filter(
+  const filteredDashboards = dashboards.filter(
     dashboard => dashboard.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="flex items-center justify-center h-64 text-red-500">{error}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -126,18 +109,15 @@ const DashboardList = () => {
                 </CardHeader>
                 <CardContent className="p-4 pt-2">
                   <div className="relative h-32 bg-muted/50 rounded-md flex items-center justify-center mb-3">
-                    {getThumbnailIcon(dashboard.thumbnail)}
+                    {getThumbnailIcon(dashboard.firstChartType)}
                     <div className="absolute bottom-2 right-2 bg-background/80 backdrop-blur-sm text-xs px-2 py-1 rounded-full">
                       {dashboard.chartCount} charts
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {dashboard.description}
-                  </p>
                 </CardContent>
                 <CardFooter className="p-4 pt-0 flex justify-between text-xs text-muted-foreground">
-                  <div>Created by {dashboard.creator}</div>
-                  <div>Updated {dashboard.updatedAt}</div>
+                  <div>Created {new Date(dashboard.createdAt).toLocaleDateString()}</div>
+                  <div>Updated {new Date(dashboard.updatedAt).toLocaleDateString()}</div>
                 </CardFooter>
               </Card>
             </Link>
