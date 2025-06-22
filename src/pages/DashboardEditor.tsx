@@ -21,6 +21,8 @@ import {
     FormLabel,
 } from "@/components/ui/form";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import ColorPicker from "@/components/ui/color-picker";
+import ThemePreview from "@/components/ui/theme-preview";
 import { useForm } from "react-hook-form";
 import {
     Save,
@@ -74,7 +76,7 @@ import {
 } from "@/components/ui/resizable";
 import DraggableChartItem from "@/components/dashboard/DraggableChartItem";
 import ImportDataModal from "@/components/dashboard/ImportDataModal";
-import { DashboardItem, Dataset, ChartColors } from "@/types/dashboard";
+import { DashboardItem, Dataset, ChartColors, ChartOptions } from "@/types/dashboard";
 import { processDataForChart } from "@/lib/chartDataProcessor";
 import DataFieldSelector from "@/components/dashboard/DataFieldSelector";
 import { datasetService } from "@/services/datasetService";
@@ -179,6 +181,7 @@ const visualizationTypes = [
 // Power BI inspired color palettes
 const colorPalettes = {
     default: {
+        name: "Default",
         barColors: ["#0078D4", "#83C7F7", "#0078D4", "#3996D3", "#63ADEF"],
         lineColors: ["#107C10", "#94CF94", "#73AA24", "#46A046", "#86BC25"],
         pieColors: [
@@ -193,8 +196,10 @@ const colorPalettes = {
         backgroundColor: "#ffffff",
         textColor: "#252423",
         gridColor: "#E1DFDD",
+        description: "Default theme"
     },
     modern: {
+        name: "Modern",
         barColors: ["#4F6BED", "#8A9AF1", "#A2B0F5", "#BAC2F9", "#D2D4FC"],
         lineColors: ["#FF8961", "#FF9F80", "#FFBDA1", "#FFD4B8", "#FFE8D1"],
         pieColors: [
@@ -209,8 +214,10 @@ const colorPalettes = {
         backgroundColor: "#F8F8F8",
         textColor: "#252423",
         gridColor: "#E1DFDD",
+        description: "Modern gradient theme"
     },
     dark: {
+        name: "Dark",
         barColors: ["#4894FE", "#FF8B8B", "#FFE556", "#7CD474", "#C984F9"],
         lineColors: ["#00BCF2", "#FF8C00", "#FFB900", "#107C10", "#DF3A91"],
         pieColors: [
@@ -225,8 +232,10 @@ const colorPalettes = {
         backgroundColor: "#201F1F",
         textColor: "#F3F2F1",
         gridColor: "#3B3A39",
+        description: "Dark theme for better contrast"
     },
     pastel: {
+        name: "Pastel",
         barColors: ["#AADEA2", "#F2C5AE", "#A2C5F9", "#F9C3D9", "#C3E5E9"],
         lineColors: ["#FFD7B1", "#C1E0F7", "#D9EAD3", "#FFF2CC", "#E6D0DE"],
         pieColors: [
@@ -241,7 +250,44 @@ const colorPalettes = {
         backgroundColor: "#FCFDFD",
         textColor: "#252423",
         gridColor: "#ECF0F1",
+        description: "Soft pastel colors"
     },
+    vibrant: {
+        name: "Vibrant",
+        barColors: ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7"],
+        lineColors: ["#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9"],
+        pieColors: [
+            "#FF6B6B",
+            "#4ECDC4",
+            "#45B7D1",
+            "#96CEB4",
+            "#FFEAA7",
+            "#DDA0DD",
+            "#98D8C8",
+        ],
+        backgroundColor: "#ffffff",
+        textColor: "#2C3E50",
+        gridColor: "#BDC3C7",
+        description: "Bold and vibrant colors"
+    },
+    corporate: {
+        name: "Corporate",
+        barColors: ["#34495E", "#3498DB", "#2980B9", "#5D6D7E", "#85929E"],
+        lineColors: ["#E74C3C", "#C0392B", "#A93226", "#922B21", "#7B241C"],
+        pieColors: [
+            "#34495E",
+            "#3498DB",
+            "#2980B9",
+            "#5D6D7E",
+            "#85929E",
+            "#E74C3C",
+            "#C0392B",
+        ],
+        backgroundColor: "#ffffff",
+        textColor: "#2C3E50",
+        gridColor: "#ECF0F1",
+        description: "Professional corporate theme"
+    }
 };
 
 // Sample mock data for charts
@@ -282,13 +328,13 @@ const chartConfig = {
             stacked: false,
         },
         renderPreview: (
-            data,
-            options = {},
+            data: any[],
+            options: ChartOptions = {},
             colorPalette = colorPalettes.default
         ) => (
             <ResponsiveContainer width="100%" height="100%">
                 <RechartsBarChart data={data}>
-                    {options.showGrid && (
+                    {(options.showGrid ?? true) && (
                         <CartesianGrid
                             strokeDasharray="3 3"
                             stroke={colorPalette.gridColor}
@@ -300,7 +346,7 @@ const chartConfig = {
                     />
                     <YAxis tick={{ fill: colorPalette.textColor }} />
                     <Tooltip />
-                    {options.showLegend && <Legend />}
+                    {(options.showLegend ?? true) && <Legend />}
                     <Bar
                         dataKey="value"
                         fill={options.barColor || colorPalette.barColors[0]}
@@ -319,13 +365,13 @@ const chartConfig = {
             smooth: false,
         },
         renderPreview: (
-            data,
-            options = {},
+            data: any[],
+            options: ChartOptions = {},
             colorPalette = colorPalettes.default
         ) => (
             <ResponsiveContainer width="100%" height="100%">
                 <RechartsLineChart data={data}>
-                    {options.showGrid && (
+                    {(options.showGrid ?? true) && (
                         <CartesianGrid
                             strokeDasharray="3 3"
                             stroke={colorPalette.gridColor}
@@ -337,7 +383,7 @@ const chartConfig = {
                     />
                     <YAxis tick={{ fill: colorPalette.textColor }} />
                     <Tooltip />
-                    {options.showLegend && <Legend />}
+                    {(options.showLegend ?? true) && <Legend />}
                     <Line
                         type="monotone"
                         dataKey="value"
@@ -370,8 +416,8 @@ const chartConfig = {
             paddingAngle: 0,
         },
         renderPreview: (
-            data,
-            options = {},
+            data: any[],
+            options: ChartOptions = {},
             colorPalette = colorPalettes.default
         ) => (
             <ResponsiveContainer width="100%" height="100%">
@@ -384,21 +430,21 @@ const chartConfig = {
                         outerRadius={options.outerRadius || 80}
                         fill="#8884d8"
                         dataKey="value"
+                        nameKey="name"
                         label
                     >
-                        {data.map((entry, index) => (
+                        {data.map((_, index) => (
                             <Cell
                                 key={`cell-${index}`}
                                 fill={
-                                    colorPalette.pieColors[
-                                    index % colorPalette.pieColors.length
-                                    ]
+                                    (options.pieColors && options.pieColors[index % options.pieColors.length])
+                                    || colorPalette.pieColors[index % colorPalette.pieColors.length]
                                 }
                             />
                         ))}
                     </Pie>
                     <Tooltip />
-                    {options.showLegend && <Legend />}
+                    {(options.showLegend ?? true) && <Legend />}
                 </RechartsPieChart>
             </ResponsiveContainer>
         ),
@@ -639,7 +685,7 @@ const DashboardEditor = () => {
                     width: newWidth,
                     height: newHeight,
                     title: `${chartConfig[chartType as keyof typeof chartConfig]
-                            ?.name || "Chart"
+                        ?.name || "Chart"
                         }`,
                     dataSourceId: null,
                     chartOptions: {
@@ -647,9 +693,9 @@ const DashboardEditor = () => {
                             ?.defaultOptions || {}),
                         barColor: currentPalette.barColors[0],
                         lineColor: currentPalette.lineColors[0],
+                        backgroundColor: currentPalette.backgroundColor,
+                        borderColor: "#e5e7eb",
                     },
-                    backgroundColor: currentPalette.backgroundColor,
-                    borderColor: "#e5e7eb",
                 };
 
                 setDashboardItems((prev) => [...prev, newItem]);
@@ -664,8 +710,13 @@ const DashboardEditor = () => {
                     const updatedItem = {
                         ...selectedElement,
                         dataSourceId,
-                        title: `${selectedElement.title} - ${datasets.find((ds) => ds.id === dataSourceId)?.name
+                        title: `${selectedElement.title} - ${datasets.find((ds) => ds.datasetId === dataSourceId)?.name
                             }`,
+                        chartOptions: {
+                            ...selectedElement.chartOptions,
+                            backgroundColor: currentPalette.backgroundColor,
+                            borderColor: "#e5e7eb",
+                        },
                     };
 
                     setDashboardItems((prev) =>
@@ -678,7 +729,7 @@ const DashboardEditor = () => {
 
                     // Set preview data
                     const dataset = datasets.find(
-                        (ds) => ds.id === dataSourceId
+                        (ds) => ds.datasetId === dataSourceId
                     );
                     if (dataset && dataset.previewData) {
                         setPreviewData(dataset.previewData);
@@ -688,7 +739,7 @@ const DashboardEditor = () => {
                 } else {
                     // Create a new table visualization with this data
                     const dataset = datasets.find(
-                        (ds) => ds.id === dataSourceId
+                        (ds) => ds.datasetId === dataSourceId
                     );
                     const currentPalette =
                         colorPalettes[
@@ -709,8 +760,10 @@ const DashboardEditor = () => {
                         height: newHeight,
                         title: `${dataset?.name || "Data Table"}`,
                         dataSourceId,
-                        chartOptions: {},
-                        backgroundColor: currentPalette.backgroundColor,
+                        chartOptions: {
+                            backgroundColor: currentPalette.backgroundColor,
+                            borderColor: "#e5e7eb",
+                        },
                     };
 
                     setDashboardItems((prev) => [...prev, newItem]);
@@ -723,7 +776,7 @@ const DashboardEditor = () => {
                     }
 
                     customToast.success(
-                        `Added table with ${dataset?.name} data!`
+                        `Added table with ${dataset?.datasetName} data!`
                     );
                 }
             }
@@ -847,7 +900,7 @@ const DashboardEditor = () => {
     const handleItemClick = (item: DashboardItem) => {
         setSelectedElement(item);
         if (item.dataSourceId) {
-            const dataset = datasets.find((ds) => ds.id === item.dataSourceId);
+            const dataset = datasets.find((ds) => ds.datasetId === item.dataSourceId);
             setSelectedDataset(dataset || null);
             setSelectedDataSource(item.dataSourceId);
             if (dataset?.previewData) {
@@ -872,11 +925,8 @@ const DashboardEditor = () => {
 
             const updatedItem = {
                 ...selectedElement,
-                dataSourceId: dataset.datasetId.toString(),
-                title: `${chartConfig[
-                        selectedElement.type as keyof typeof chartConfig
-                    ]?.name || "Chart"
-                    } - ${dataset.datasetName}`,
+                dataSourceId: dataset.datasetId?.toString(),
+                title: `${chartConfig[selectedElement.type as keyof typeof chartConfig]?.name || "Chart"} - ${dataset.datasetName}`,
                 chartOptions: {
                     ...selectedElement.chartOptions,
                     categoryField: undefined,
@@ -892,11 +942,11 @@ const DashboardEditor = () => {
             );
             setSelectedElement(updatedItem);
             setSelectedDataset(dataset);
-            setSelectedDataSource(dataset.datasetId.toString());
+            setSelectedDataSource(dataset.datasetId?.toString());
 
             // Set preview data
-            if (datasetDetail.previewData) {
-                setPreviewData(datasetDetail.previewData);
+            if (datasetDetail.data?.items) {
+                setPreviewData(datasetDetail.data.items);
             }
 
             customToast.success("Dataset selected successfully");
@@ -1048,20 +1098,9 @@ const DashboardEditor = () => {
 
         const updatedItem = {
             ...selectedElement,
-            title: values.title || selectedElement.title,
-            backgroundColor: values.backgroundColor,
-            borderColor: values.borderColor,
             chartOptions: {
                 ...selectedElement.chartOptions,
-                showLegend: values.showLegend,
-                showGrid: values.showGrid,
-                barColor: values.barColor,
-                lineColor: values.lineColor,
-                xAxisLabel: values.xAxisLabel,
-                yAxisLabel: values.yAxisLabel,
-                innerRadius: values.innerRadius,
-                outerRadius: values.outerRadius,
-                showDots: values.showDots,
+                ...values,
             },
         };
 
@@ -1071,36 +1110,29 @@ const DashboardEditor = () => {
             )
         );
         setSelectedElement(updatedItem);
-
-        customToast.success("Chart properties updated");
     };
 
     // Handle color palette change
     const handleColorPaletteChange = (paletteName: string) => {
-        setSelectedColorPalette(paletteName);
-        const palette =
-            colorPalettes[paletteName as keyof typeof colorPalettes];
-
         if (selectedElement) {
-            // Update the selected element with new palette colors
-            const chartType = selectedElement.type as keyof typeof chartConfig;
+            const palette = colorPalettes[paletteName as keyof typeof colorPalettes];
             let updatedChartOptions = { ...selectedElement.chartOptions };
 
-            if (chartType === "bar") {
-                updatedChartOptions = {
-                    ...updatedChartOptions,
-                    barColor: palette.barColors[0],
-                };
-            } else if (chartType === "line") {
-                updatedChartOptions = {
-                    ...updatedChartOptions,
-                    lineColor: palette.lineColors[0],
-                };
+            // Gán màu mới từ palette vào chartOptions
+            if (selectedElement.type === "bar") {
+                updatedChartOptions.barColor = palette.barColors[0];
+            }
+            if (selectedElement.type === "line") {
+                updatedChartOptions.lineColor = palette.lineColors[0];
+            }
+            updatedChartOptions.backgroundColor = palette.backgroundColor;
+
+            if (selectedElement.type === "pie") {
+                updatedChartOptions.pieColors = palette.pieColors;
             }
 
             const updatedItem = {
                 ...selectedElement,
-                backgroundColor: palette.backgroundColor,
                 chartOptions: updatedChartOptions,
             };
 
@@ -1110,15 +1142,8 @@ const DashboardEditor = () => {
                 )
             );
             setSelectedElement(updatedItem);
-
-            // Update form values
-            form.setValue("barColor", palette.barColors[0]);
-            form.setValue("lineColor", palette.lineColors[0]);
-            form.setValue("backgroundColor", palette.backgroundColor);
+            setSelectedColorPalette(paletteName);
         }
-
-        // Apply new background color if selected
-        setDashboardBackground(palette.backgroundColor);
     };
 
     // Handle save of dashboard
@@ -1136,21 +1161,8 @@ const DashboardEditor = () => {
                     title: item.title || "Untitled Chart",
                     dataSourceId: item.dataSourceId || null,
                     chartOptions: JSON.stringify({
-                        showGrid: item.chartOptions?.showGrid ?? false,
-                        showLegend: item.chartOptions?.showLegend ?? false,
-                        barColor: item.chartOptions?.barColor || "#4F6BED",
-                        lineColor: item.chartOptions?.lineColor || "#FF8961",
-                        showDots: item.chartOptions?.showDots ?? false,
-                        innerRadius: item.chartOptions?.innerRadius || 0,
-                        outerRadius: item.chartOptions?.outerRadius || 80,
-                        categoryField: item.chartOptions?.categoryField || "",
-                        valueField: item.chartOptions?.valueField || "",
-                        seriesField: item.chartOptions?.seriesField || "",
-                        aggregation: item.chartOptions?.aggregation || "sum",
-                        timeInterval: item.chartOptions?.timeInterval || "month"
+                        ...item.chartOptions
                     }),
-                    backgroundColor: item.backgroundColor || "#ffffff",
-                    borderColor: item.borderColor || "#e5e7eb"
                 }))
             };
 
@@ -1193,10 +1205,6 @@ const DashboardEditor = () => {
     const renderChart = (item: DashboardItem) => {
         console.log("Rendering chart for item:", item);
 
-        // Get current color palette
-        const palette =
-            colorPalettes[selectedColorPalette as keyof typeof colorPalettes];
-
         // Create chart data in the same format as the test chart
         const chartData = item.chartOptions?.data
             ? item.chartOptions.data.categories.map((category, index) => ({
@@ -1224,16 +1232,16 @@ const DashboardEditor = () => {
                     <div style={{ width: "100%", height: "100%" }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <RechartsBarChart data={chartData}>
-                                {item.chartOptions?.showGrid && (
+                                {(item.chartOptions?.showGrid ?? true) && (
                                     <CartesianGrid
                                         strokeDasharray="3 3"
-                                        stroke="#E1DFDD"
+                                        stroke={item.chartOptions?.barColor || "#0078D4"}
                                     />
                                 )}
                                 <XAxis dataKey="name" />
                                 <YAxis />
                                 <Tooltip />
-                                {item.chartOptions?.showLegend && (
+                                {(item.chartOptions?.showLegend ?? true) && (
                                     <Legend
                                         verticalAlign="top"
                                         height={36}
@@ -1246,9 +1254,7 @@ const DashboardEditor = () => {
                                 )}
                                 <Bar
                                     dataKey="value"
-                                    fill={
-                                        item.chartOptions?.barColor || "#0078D4"
-                                    }
+                                    fill={item.chartOptions?.barColor || "#0078D4"}
                                     name={
                                         item.chartOptions?.valueField || "Value"
                                     }
@@ -1263,16 +1269,16 @@ const DashboardEditor = () => {
                     <div style={{ width: "100%", height: "100%" }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <RechartsLineChart data={chartData}>
-                                {item.chartOptions?.showGrid && (
+                                {(item.chartOptions?.showGrid ?? true) && (
                                     <CartesianGrid
                                         strokeDasharray="3 3"
-                                        stroke="#E1DFDD"
+                                        stroke={item.chartOptions?.barColor || "#0078D4"}
                                     />
                                 )}
                                 <XAxis dataKey="name" />
                                 <YAxis />
                                 <Tooltip />
-                                {item.chartOptions?.showLegend && (
+                                {(item.chartOptions?.showLegend ?? true) && (
                                     <Legend
                                         verticalAlign="top"
                                         height={36}
@@ -1286,10 +1292,7 @@ const DashboardEditor = () => {
                                 <Line
                                     type="monotone"
                                     dataKey="value"
-                                    stroke={
-                                        item.chartOptions?.lineColor ||
-                                        "#107C10"
-                                    }
+                                    stroke={item.chartOptions?.lineColor || "#0078D4"}
                                     strokeWidth={2}
                                     dot={true}
                                     name={
@@ -1310,8 +1313,8 @@ const DashboardEditor = () => {
                                     data={chartData}
                                     cx="50%"
                                     cy="50%"
-                                    innerRadius={0}
-                                    outerRadius={80}
+                                    innerRadius={item.chartOptions?.innerRadius || 0}
+                                    outerRadius={item.chartOptions?.outerRadius || 80}
                                     fill="#8884d8"
                                     dataKey="value"
                                     nameKey="name"
@@ -1321,16 +1324,14 @@ const DashboardEditor = () => {
                                         <Cell
                                             key={`cell-${index}`}
                                             fill={
-                                                palette.pieColors[
-                                                index %
-                                                palette.pieColors.length
-                                                ]
+                                                (item.chartOptions?.pieColors && item.chartOptions.pieColors[index % item.chartOptions.pieColors.length])
+                                                || colorPalettes.default.pieColors[index % colorPalettes.default.pieColors.length]
                                             }
                                         />
                                     ))}
                                 </Pie>
                                 <Tooltip />
-                                {item.chartOptions?.showLegend && (
+                                {(item.chartOptions?.showLegend ?? true) && (
                                     <Legend
                                         verticalAlign="bottom"
                                         height={36}
@@ -1369,19 +1370,19 @@ const DashboardEditor = () => {
                     pageSize: datasetPageSize,
                 });
                 const formattedDatasets = response.items.map((dataset) => ({
-                    datasetId: dataset.datasetId,
-                    datasetName: dataset.datasetName,
-                    sourceType: dataset.sourceType,
+                    datasetId: dataset.id,
+                    datasetName: dataset.name,
+                    sourceType: dataset.type,
                     sourceName: dataset.sourceName,
-                    totalRows: dataset.totalRows,
+                    totalRows: dataset.rows,
                     columns: dataset.columns || [],
                     createdAt: dataset.createdAt,
                     createdBy: dataset.createdBy,
                     status: dataset.status,
                     icon:
-                        dataset.sourceType === "csv"
+                        dataset.type === "csv"
                             ? FileText
-                            : dataset.sourceType === "excel"
+                            : dataset.type === "excel"
                                 ? FileSpreadsheet
                                 : FileChartLine,
                 }));
@@ -1467,13 +1468,13 @@ const DashboardEditor = () => {
                 if (!isNewDashboard && id) {
                     const response = await dashboardService.getDashboard(parseInt(id));
                     setDashboardTitle(response.title);
-                    
+
                     // Parse chartOptions từ JSON string thành object
                     const items = response.items.map(item => ({
                         ...item,
                         chartOptions: item.chartOptions ? JSON.parse(item.chartOptions) : {}
                     }));
-                    
+
                     setDashboardItems(items);
                     // Lưu trạng thái ban đầu
                     setInitialState({
@@ -1485,10 +1486,10 @@ const DashboardEditor = () => {
                     for (const item of items) {
                         if (item.dataSourceId) {
                             try {
-                                const dataset = datasetsResponse.items.find(d => d.datasetId.toString() === item.dataSourceId);
+                                const dataset = datasetsResponse.items.find(d => d.id.toString() === item.dataSourceId);
                                 if (dataset) {
                                     const response = await datasetService.aggregateDataset(
-                                        dataset.datasetId,
+                                        dataset.id,
                                         {
                                             categoryField: item.chartOptions.categoryField,
                                             valueField: item.chartOptions.valueField,
@@ -1540,14 +1541,14 @@ const DashboardEditor = () => {
             setHasChanges(dashboardTitle.trim() !== "" && dashboardItems.length > 0);
         } else if (initialState) {
             const hasTitleChanged = dashboardTitle.trim() !== initialState.title.trim();
-            
+
             const hasItemsChanged = dashboardItems.length !== initialState.items.length ||
                 dashboardItems.some((item, index) => {
                     const initialItem = initialState.items[index];
                     if (!initialItem) return true;
-                    
+
                     // So sánh các thuộc tính cơ bản
-                    const basicPropsChanged = 
+                    const basicPropsChanged =
                         item.type !== initialItem.type ||
                         item.x !== initialItem.x ||
                         item.y !== initialItem.y ||
@@ -1555,8 +1556,8 @@ const DashboardEditor = () => {
                         item.height !== initialItem.height ||
                         item.title !== initialItem.title ||
                         item.dataSourceId !== initialItem.dataSourceId ||
-                        item.backgroundColor !== initialItem.backgroundColor ||
-                        item.borderColor !== initialItem.borderColor;
+                        item.chartOptions.backgroundColor !== initialItem.chartOptions.backgroundColor ||
+                        item.chartOptions.borderColor !== initialItem.chartOptions.borderColor;
 
                     if (basicPropsChanged) return true;
 
@@ -1565,7 +1566,7 @@ const DashboardEditor = () => {
                     if (!item.chartOptions || !initialItem.chartOptions) return true;
 
                     // So sánh từng thuộc tính của chartOptions
-                    const chartOptionsChanged = 
+                    const chartOptionsChanged =
                         item.chartOptions.showGrid !== initialItem.chartOptions.showGrid ||
                         item.chartOptions.showLegend !== initialItem.chartOptions.showLegend ||
                         item.chartOptions.barColor !== initialItem.chartOptions.barColor ||
@@ -1644,51 +1645,19 @@ const DashboardEditor = () => {
 
                                     {/* Color Palette Selection */}
                                     <div className="p-4 border-t">
-                                        <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                                        <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
                                             <Palette className="h-4 w-4" />{" "}
-                                            Color Theme
+                                            Color Themes
                                         </h4>
-                                        <div className="grid grid-cols-2 gap-2">
+                                        <div className="space-y-3">
                                             {Object.entries(colorPalettes).map(
                                                 ([name, palette]) => (
-                                                    <button
+                                                    <ThemePreview
                                                         key={name}
-                                                        className={`p-2 border rounded-md transition-all ${selectedColorPalette ===
-                                                                name
-                                                                ? "ring-2 ring-primary border-primary"
-                                                                : "hover:bg-muted/50"
-                                                            }`}
-                                                        onClick={() =>
-                                                            handleColorPaletteChange(
-                                                                name
-                                                            )
-                                                        }
-                                                    >
-                                                        <div className="flex gap-1 justify-center mb-1">
-                                                            {palette.barColors
-                                                                .slice(0, 3)
-                                                                .map(
-                                                                    (
-                                                                        color,
-                                                                        i
-                                                                    ) => (
-                                                                        <div
-                                                                            key={
-                                                                                i
-                                                                            }
-                                                                            className="w-3 h-3 rounded-full"
-                                                                            style={{
-                                                                                backgroundColor:
-                                                                                    color,
-                                                                            }}
-                                                                        />
-                                                                    )
-                                                                )}
-                                                        </div>
-                                                        <p className="text-xs capitalize">
-                                                            {name}
-                                                        </p>
-                                                    </button>
+                                                        palette={palette}
+                                                        isSelected={selectedColorPalette === name}
+                                                        onClick={() => handleColorPaletteChange(name)}
+                                                    />
                                                 )
                                             )}
                                         </div>
@@ -1719,62 +1688,37 @@ const DashboardEditor = () => {
 
                                         {selectedElement ? (
                                             <div className="space-y-4">
-                                                {datasets.map((dataset) => (
+                                                {datasets.filter(ds => ds && ds.datasetId).map(dataset => (
                                                     <div
                                                         key={dataset.datasetId}
-                                                        className={`flex flex-col gap-3 p-3 border rounded-md transition-colors ${selectedElement.dataSourceId ===
-                                                                dataset.datasetId.toString()
-                                                                ? "bg-muted/50 border-primary"
-                                                                : "hover:bg-muted/50"
-                                                            }`}
-                                                        onClick={() =>
-                                                            handleDatasetSelect(
-                                                                dataset
-                                                            )
-                                                        }
+                                                        className={`flex flex-col gap-3 p-3 border rounded-md transition-colors ${selectedElement.dataSourceId === dataset.id?.toString() ? "bg-muted/50 border-primary" : "hover:bg-muted/50"}`}
+                                                        onClick={() => handleDatasetSelect(dataset)}
                                                     >
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex items-center gap-2">
                                                                 <Database className="h-4 w-4" />
                                                                 <span className="font-medium">
-                                                                    {
-                                                                        dataset.datasetName
-                                                                    }
+                                                                    {dataset.datasetName}
                                                                 </span>
                                                             </div>
                                                             <div className="text-sm text-muted-foreground">
-                                                                {
-                                                                    dataset.totalRows
-                                                                }{" "}
-                                                                rows
+                                                                {dataset.totalRows} rows
                                                             </div>
                                                         </div>
                                                         <div className="text-sm text-muted-foreground">
                                                             {dataset.sourceName}
                                                         </div>
-
-                                                        {selectedElement.dataSourceId ===
-                                                            dataset.datasetId.toString() && (
-                                                                <div className="mt-2 border-t pt-2">
-                                                                    <DataFieldSelector
-                                                                        dataset={
-                                                                            dataset
-                                                                        }
-                                                                        selectedElement={
-                                                                            selectedElement
-                                                                        }
-                                                                        onFieldSelect={
-                                                                            handleFieldSelect
-                                                                        }
-                                                                        onAggregationChange={
-                                                                            handleAggregationChange
-                                                                        }
-                                                                        onApply={
-                                                                            handleApply
-                                                                        }
-                                                                    />
-                                                                </div>
-                                                            )}
+                                                        {selectedElement.dataSourceId === dataset.datasetId?.toString() && (
+                                                            <div className="mt-2 border-t pt-2">
+                                                                <DataFieldSelector
+                                                                    dataset={dataset}
+                                                                    selectedElement={selectedElement}
+                                                                    onFieldSelect={handleFieldSelect}
+                                                                    onAggregationChange={handleAggregationChange}
+                                                                    onApply={handleApply}
+                                                                />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                                 {isLoadingDatasets && (
@@ -1785,8 +1729,7 @@ const DashboardEditor = () => {
                                             </div>
                                         ) : (
                                             <div className="text-center text-muted-foreground">
-                                                Select a chart to choose a
-                                                dataset
+                                                Select a chart to choose a dataset
                                             </div>
                                         )}
                                     </div>
@@ -1927,107 +1870,182 @@ const DashboardEditor = () => {
 
                                             {selectedElement.type === "bar" && (
                                                 <>
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="barColor"
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <div className="flex justify-between">
-                                                                    <FormLabel>
-                                                                        Bar
-                                                                        Color
-                                                                    </FormLabel>
-                                                                    <div
-                                                                        className="w-5 h-5 rounded-full border"
-                                                                        style={{
-                                                                            backgroundColor:
-                                                                                field.value,
-                                                                        }}
-                                                                    />
+                                                    <div className="space-y-3">
+                                                        <div>
+                                                            <Label className="text-sm font-medium">Bar Colors</Label>
+                                                            <div className="mt-2 space-y-2">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="flex-1">
+                                                                        <Label className="text-xs text-muted-foreground">Primary Color</Label>
+                                                                        <div className="flex items-center gap-2 mt-1">
+                                                                            <div
+                                                                                className="w-6 h-6 rounded-full border-2 border-border cursor-pointer"
+                                                                                style={{
+                                                                                    backgroundColor: selectedElement.chartOptions?.barColor || "#0078D4",
+                                                                                }}
+                                                                                onClick={() => {
+                                                                                    const input = document.createElement('input');
+                                                                                    input.type = 'color';
+                                                                                    input.value = selectedElement.chartOptions?.barColor || "#0078D4";
+                                                                                    input.onchange = (e) => {
+                                                                                        const color = (e.target as HTMLInputElement).value;
+                                                                                        updateChartProperties({
+                                                                                            ...form.getValues(),
+                                                                                            barColor: color
+                                                                                        });
+                                                                                    };
+                                                                                    input.click();
+                                                                                }}
+                                                                            />
+                                                                            <Input
+                                                                                value={selectedElement.chartOptions?.barColor || "#0078D4"}
+                                                                                onChange={(e) => updateChartProperties({
+                                                                                    ...form.getValues(),
+                                                                                    barColor: e.target.value
+                                                                                })}
+                                                                                className="flex-1 text-xs"
+                                                                                placeholder="#0078D4"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
-                                                                <FormControl>
-                                                                    <Input
-                                                                        {...field}
-                                                                        type="color"
-                                                                    />
-                                                                </FormControl>
-                                                            </FormItem>
-                                                        )}
-                                                    />
+
+                                                                {/* Color Palette Quick Select */}
+                                                                <div>
+                                                                    <Label className="text-xs text-muted-foreground">Quick Colors</Label>
+                                                                    <div className="flex gap-1 mt-1">
+                                                                        {colorPalettes[selectedColorPalette as keyof typeof colorPalettes].barColors.slice(0, 5).map((color, index) => (
+                                                                            <button
+                                                                                key={index}
+                                                                                className="w-6 h-6 rounded-full border-2 border-border hover:border-primary transition-colors"
+                                                                                style={{ backgroundColor: color }}
+                                                                                onClick={() => updateChartProperties({
+                                                                                    ...form.getValues(),
+                                                                                    barColor: color
+                                                                                })}
+                                                                                title={color}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </>
                                             )}
 
-                                            {selectedElement.type ===
-                                                "line" && (
-                                                    <>
+                                            {selectedElement.type === "line" && (
+                                                <>
+                                                    <div className="space-y-3">
+                                                        <div>
+                                                            <Label className="text-sm font-medium">Line Colors</Label>
+                                                            <div className="mt-2 space-y-2">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="flex-1">
+                                                                        <Label className="text-xs text-muted-foreground">Primary Color</Label>
+                                                                        <div className="flex items-center gap-2 mt-1">
+                                                                            <div
+                                                                                className="w-6 h-6 rounded-full border-2 border-border cursor-pointer"
+                                                                                style={{
+                                                                                    backgroundColor: selectedElement.chartOptions?.lineColor || "#0078D4",
+                                                                                }}
+                                                                                onClick={() => {
+                                                                                    const input = document.createElement('input');
+                                                                                    input.type = 'color';
+                                                                                    input.value = selectedElement.chartOptions?.lineColor || "#0078D4";
+                                                                                    input.onchange = (e) => {
+                                                                                        const color = (e.target as HTMLInputElement).value;
+                                                                                        updateChartProperties({
+                                                                                            ...form.getValues(),
+                                                                                            lineColor: color
+                                                                                        });
+                                                                                    };
+                                                                                    input.click();
+                                                                                }}
+                                                                            />
+                                                                            <Input
+                                                                                value={selectedElement.chartOptions?.lineColor || "#0078D4"}
+                                                                                onChange={(e) => updateChartProperties({
+                                                                                    ...form.getValues(),
+                                                                                    lineColor: e.target.value
+                                                                                })}
+                                                                                className="flex-1 text-xs"
+                                                                                placeholder="#0078D4"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Color Palette Quick Select */}
+                                                                <div>
+                                                                    <Label className="text-xs text-muted-foreground">Quick Colors</Label>
+                                                                    <div className="flex gap-1 mt-1">
+                                                                        {colorPalettes[selectedColorPalette as keyof typeof colorPalettes].lineColors.slice(0, 5).map((color, index) => (
+                                                                            <button
+                                                                                key={index}
+                                                                                className="w-6 h-6 rounded-full border-2 border-border hover:border-primary transition-colors"
+                                                                                style={{ backgroundColor: color }}
+                                                                                onClick={() => updateChartProperties({
+                                                                                    ...form.getValues(),
+                                                                                    lineColor: color
+                                                                                })}
+                                                                                title={color}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {selectedElement.type === "pie" && (
+                                                <>
+                                                    <div className="space-y-3">
+                                                        <div>
+                                                            <Label className="text-sm font-medium">Pie Colors</Label>
+                                                            <div className="mt-2">
+                                                                <Label className="text-xs text-muted-foreground">Color Palette</Label>
+                                                                <div className="grid grid-cols-7 gap-1 mt-1">
+                                                                    {colorPalettes[selectedColorPalette as keyof typeof colorPalettes].pieColors.map((color, index) => (
+                                                                        <div
+                                                                            key={index}
+                                                                            className="w-6 h-6 rounded-full border border-white shadow-sm"
+                                                                            style={{ backgroundColor: color }}
+                                                                            title={color}
+                                                                        />
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
                                                         <FormField
                                                             control={form.control}
-                                                            name="lineColor"
+                                                            name="innerRadius"
                                                             render={({ field }) => (
                                                                 <FormItem>
-                                                                    <div className="flex justify-between">
-                                                                        <FormLabel>
-                                                                            Line
-                                                                            Color
-                                                                        </FormLabel>
-                                                                        <div
-                                                                            className="w-5 h-5 rounded-full border"
-                                                                            style={{
-                                                                                backgroundColor:
-                                                                                    field.value,
-                                                                            }}
-                                                                        />
+                                                                    <div className="flex justify-between items-center">
+                                                                        <FormLabel>Inner Radius</FormLabel>
+                                                                        <span className="text-sm text-muted-foreground">
+                                                                            {field.value}
+                                                                        </span>
                                                                     </div>
                                                                     <FormControl>
-                                                                        <Input
-                                                                            {...field}
-                                                                            type="color"
+                                                                        <Slider
+                                                                            min={0}
+                                                                            max={80}
+                                                                            step={5}
+                                                                            defaultValue={[field.value]}
+                                                                            onValueChange={(value) =>
+                                                                                field.onChange(value[0])
+                                                                            }
                                                                         />
                                                                     </FormControl>
                                                                 </FormItem>
                                                             )}
                                                         />
-                                                    </>
-                                                )}
-
-                                            {selectedElement.type === "pie" && (
-                                                <>
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="innerRadius"
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <div className="flex justify-between items-center">
-                                                                    <FormLabel>
-                                                                        Inner
-                                                                        Radius
-                                                                    </FormLabel>
-                                                                    <span className="text-sm text-muted-foreground">
-                                                                        {
-                                                                            field.value
-                                                                        }
-                                                                    </span>
-                                                                </div>
-                                                                <FormControl>
-                                                                    <Slider
-                                                                        min={0}
-                                                                        max={80}
-                                                                        step={5}
-                                                                        defaultValue={[
-                                                                            field.value,
-                                                                        ]}
-                                                                        onValueChange={(
-                                                                            value
-                                                                        ) =>
-                                                                            field.onChange(
-                                                                                value[0]
-                                                                            )
-                                                                        }
-                                                                    />
-                                                                </FormControl>
-                                                            </FormItem>
-                                                        )}
-                                                    />
+                                                    </div>
                                                 </>
                                             )}
 
@@ -2084,59 +2102,45 @@ const DashboardEditor = () => {
                                                     Appearance
                                                 </h4>
 
-                                                <FormField
-                                                    control={form.control}
-                                                    name="backgroundColor"
-                                                    render={({ field }) => (
-                                                        <FormItem className="mb-2">
-                                                            <div className="flex justify-between">
-                                                                <FormLabel>
-                                                                    Background
-                                                                </FormLabel>
-                                                                <div
-                                                                    className="w-5 h-5 rounded-full border"
-                                                                    style={{
-                                                                        backgroundColor:
-                                                                            field.value,
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <FormControl>
-                                                                <Input
-                                                                    {...field}
-                                                                    type="color"
-                                                                />
-                                                            </FormControl>
-                                                        </FormItem>
-                                                    )}
-                                                />
+                                                <div className="space-y-4">
+                                                    {/* Background Color */}
+                                                    <ColorPicker
+                                                        value={selectedElement.chartOptions.backgroundColor || "#ffffff"}
+                                                        onChange={(color) => updateChartProperties({
+                                                            ...form.getValues(),
+                                                            backgroundColor: color
+                                                        })}
+                                                        label="Background Color"
+                                                        placeholder="#ffffff"
+                                                        presetColors={["#ffffff", "#f8f9fa", "#f1f3f4", "#e8eaed", "#202124", "#f5f5f5", "#fafafa"]}
+                                                    />
 
-                                                <FormField
-                                                    control={form.control}
-                                                    name="borderColor"
-                                                    render={({ field }) => (
-                                                        <FormItem className="mb-4">
-                                                            <div className="flex justify-between">
-                                                                <FormLabel>
-                                                                    Border
-                                                                </FormLabel>
-                                                                <div
-                                                                    className="w-5 h-5 rounded-full border"
-                                                                    style={{
-                                                                        backgroundColor:
-                                                                            field.value,
-                                                                    }}
-                                                                />
+                                                    {/* Border Color */}
+                                                    <ColorPicker
+                                                        value={selectedElement.chartOptions.borderColor || "#e5e7eb"}
+                                                        onChange={(color) => updateChartProperties({
+                                                            ...form.getValues(),
+                                                            borderColor: color
+                                                        })}
+                                                        label="Border Color"
+                                                        placeholder="#e5e7eb"
+                                                        presetColors={["#e5e7eb", "#d1d5db", "#9ca3af", "#6b7280", "#374151", "#f3f4f6", "#e5e7eb"]}
+                                                    />
+
+                                                    {/* Border Style Preview */}
+                                                    <div>
+                                                        <Label className="text-sm font-medium">Preview</Label>
+                                                        <div className="mt-2 p-4 rounded-lg border-2 shadow-sm"
+                                                            style={{
+                                                                backgroundColor: selectedElement.chartOptions.backgroundColor || "#ffffff",
+                                                                borderColor: selectedElement.chartOptions.borderColor || "#e5e7eb",
+                                                            }}>
+                                                            <div className="text-center text-sm text-muted-foreground">
+                                                                Chart Style Preview
                                                             </div>
-                                                            <FormControl>
-                                                                <Input
-                                                                    {...field}
-                                                                    type="color"
-                                                                />
-                                                            </FormControl>
-                                                        </FormItem>
-                                                    )}
-                                                />
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             <Button
