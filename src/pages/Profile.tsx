@@ -26,6 +26,7 @@ import {
     Building,
     Phone,
     Lock,
+    Crown,
 } from "lucide-react";
 import axiosInstance from "@/lib/axios";
 import {
@@ -41,6 +42,7 @@ interface UserProfile {
     fullName: string;
     phone?: string;
     company?: string;
+    isPro?: boolean;
 }
 
 const Profile = () => {
@@ -69,6 +71,11 @@ const Profile = () => {
         confirmPassword: "",
     });
     const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">(
+        "monthly"
+    );
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
     useEffect(() => {
         fetchProfile();
@@ -243,6 +250,31 @@ const Profile = () => {
             });
         } finally {
             setIsChangingPassword(false);
+        }
+    };
+
+    const handleUpgrade = async () => {
+        setIsProcessingPayment(true);
+        try {
+            const response = await axiosInstance.post(
+                "/payment/create-payment",
+                {
+                    message:
+                        "Upgrade to Premium Plan - One-time payment of 300,000 VND",
+                }
+            );
+            // Redirect to VNPay payment URL
+            window.location.href = response.data.paymentUrl;
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description:
+                    error.response?.data?.message ||
+                    "Failed to process payment",
+                variant: "destructive",
+            });
+        } finally {
+            setIsProcessingPayment(false);
         }
     };
 
@@ -484,6 +516,71 @@ const Profile = () => {
                     </CardContent>
                 </Card>
 
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-dashboard-primary text-white p-3 rounded-full">
+                                    <Crown className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-2xl font-bold">
+                                        {profile?.isPro ? (
+                                            <span className="flex items-center gap-2 text-yellow-500">
+                                                Premium Plan{" "}
+                                                <Crown className="h-5 w-5 text-yellow-500" />
+                                            </span>
+                                        ) : (
+                                            "Upgrade Account"
+                                        )}
+                                    </CardTitle>
+                                    <CardDescription>
+                                        {profile?.isPro
+                                            ? "You are enjoying all premium features!"
+                                            : "Unlock premium features with a one-time payment"}
+                                    </CardDescription>
+                                </div>
+                            </div>
+                            {!profile?.isPro && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowUpgradeDialog(true)}
+                                    className="flex items-center gap-2"
+                                >
+                                    <Crown className="h-4 w-4" />
+                                    Upgrade Now
+                                </Button>
+                            )}
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium flex items-center gap-2">
+                                    <Crown className="h-4 w-4" />
+                                    Current Plan
+                                </label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={
+                                            profile?.isPro
+                                                ? "Premium Plan"
+                                                : "Free Plan"
+                                        }
+                                        disabled
+                                        className={
+                                            profile?.isPro
+                                                ? "bg-yellow-50 text-yellow-700 font-bold flex-1"
+                                                : "bg-muted flex-1"
+                                        }
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* Email Dialog */}
                 <Dialog
                     open={showEmailDialog}
@@ -657,6 +754,75 @@ const Profile = () => {
                                 {isChangingPassword
                                     ? "Changing..."
                                     : "Change Password"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Upgrade Dialog */}
+                <Dialog
+                    open={showUpgradeDialog}
+                    onOpenChange={setShowUpgradeDialog}
+                >
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Upgrade Your Account</DialogTitle>
+                            <DialogDescription>
+                                Unlock premium features with a one-time payment
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="border rounded-lg p-6 bg-muted/50">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-xl font-semibold">
+                                        Premium Plan
+                                    </h3>
+                                    <div className="bg-dashboard-primary text-white px-3 py-1 rounded-full text-sm">
+                                        One-time payment
+                                    </div>
+                                </div>
+                                <p className="text-3xl font-bold mb-6">
+                                    300,000 VND
+                                </p>
+                                <ul className="space-y-3">
+                                    <li className="flex items-center gap-2">
+                                        <Check className="h-5 w-5 text-green-500" />
+                                        <span>Advanced Analytics</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <Check className="h-5 w-5 text-green-500" />
+                                        <span>Unlimited Reports</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <Check className="h-5 w-5 text-green-500" />
+                                        <span>Priority Support</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <Check className="h-5 w-5 text-green-500" />
+                                        <span>Custom Integrations</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <Check className="h-5 w-5 text-green-500" />
+                                        <span>Dedicated Support</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowUpgradeDialog(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleUpgrade}
+                                disabled={isProcessingPayment}
+                                className="bg-dashboard-primary hover:bg-dashboard-primary/90"
+                            >
+                                {isProcessingPayment
+                                    ? "Processing..."
+                                    : "Proceed to Payment"}
                             </Button>
                         </DialogFooter>
                     </DialogContent>

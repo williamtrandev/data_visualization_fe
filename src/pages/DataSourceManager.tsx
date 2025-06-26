@@ -192,9 +192,12 @@ const DataSourceManager = () => {
                                         Last updated:{" "}
                                         {new Date(
                                             source.createdAt
-                                        ).toLocaleDateString()}
+                                        ).toLocaleDateString("en-GB", {
+                                            day: "2-digit",
+                                            month: "2-digit",
+                                            year: "numeric",
+                                        })}
                                     </div>
-                                    <div>Created by: {source.createdBy}</div>
                                 </CardFooter>
                             </Card>
                         ))}

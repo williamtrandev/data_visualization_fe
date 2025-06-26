@@ -21,6 +21,8 @@ import Profile from "./pages/Profile";
 import { getAuthToken } from "@/lib/auth";
 import MergeDatasets from "@/pages/MergeDatasets";
 import ForgotPassword from "./pages/ForgotPassword";
+import VnpayReturn from "@/pages/VnpayReturn";
+import Admin from "@/pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +81,11 @@ const App = () => (
                             </AuthRoute>
                         }
                     />
+                    <Route
+                        path="/api/payment/vnpay-return"
+                        element={<VnpayReturn />}
+                    />
+                    <Route path="/admin" element={<Admin />} />
                     <Route
                         path="/"
                         element={

@@ -160,7 +160,7 @@ const DatasetDetail = () => {
                     </div>
                     <CardDescription>
                         {dataset.sourceType.toUpperCase()} • {dataset.totalRows}{" "}
-                        rows • Created by {dataset.createdBy}
+                        rows
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -182,9 +182,14 @@ const DatasetDetail = () => {
                                 Created At
                             </p>
                             <p>
-                                {new Date(
-                                    dataset.createdAt
-                                ).toLocaleDateString()}
+                                {new Date(dataset.createdAt).toLocaleDateString(
+                                    "en-GB",
+                                    {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                    }
+                                )}
                             </p>
                         </div>
                         <div>
