@@ -12,6 +12,17 @@ export interface ChartOptions {
     seriesField?: string;
     aggregation?: "sum" | "avg" | "count" | "min" | "max";
     timeInterval?: "day" | "week" | "month" | "quarter" | "year";
+    colors?: string[];
+    backgroundColor?: string;
+    borderColor?: string;
+    textColor?: string;
+    gridColor?: string;
+    data?: {
+        categories: string[];
+        values: number[];
+        series?: any[];
+    };
+    pieColors?: string[];
 }
 
 export interface DashboardItem {
@@ -24,8 +35,8 @@ export interface DashboardItem {
     title: string;
     dataSourceId: string | null;
     chartOptions: ChartOptions;
-    backgroundColor: string;
-    borderColor?: string;
+    // backgroundColor: string;
+    // borderColor?: string;
 }
 
 export interface Dataset {
@@ -48,4 +59,15 @@ export interface ChartColors {
     backgroundColor: string;
     textColor: string;
     gridColor: string;
+}
+
+export interface ColorPalette {
+    name: string;
+    barColors: string[];
+    lineColors: string[];
+    pieColors: string[];
+    backgroundColor: string;
+    textColor: string;
+    gridColor: string;
+    description?: string;
 }

@@ -127,7 +127,7 @@ const renderChart = (item: DashboardItem) => {
               {item.chartOptions?.showGrid && (
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="#E1DFDD"
+                  stroke={item.chartOptions?.barColor || "#E1DFDD"}
                 />
               )}
               <XAxis dataKey="name" />
@@ -146,9 +146,7 @@ const renderChart = (item: DashboardItem) => {
               )}
               <Bar
                 dataKey="value"
-                fill={
-                  item.chartOptions?.barColor || "#0078D4"
-                }
+                fill={item.chartOptions?.barColor || "#0078D4"}
                 name={
                   item.chartOptions?.valueField || "Value"
                 }
@@ -166,7 +164,7 @@ const renderChart = (item: DashboardItem) => {
               {item.chartOptions?.showGrid && (
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="#E1DFDD"
+                  stroke={item.chartOptions?.lineColor || "#E1DFDD"}
                 />
               )}
               <XAxis dataKey="name" />
@@ -186,10 +184,7 @@ const renderChart = (item: DashboardItem) => {
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke={
-                  item.chartOptions?.lineColor ||
-                  "#107C10"
-                }
+                stroke={item.chartOptions?.lineColor || "#107C10"}
                 strokeWidth={2}
                 dot={true}
                 name={
@@ -210,8 +205,8 @@ const renderChart = (item: DashboardItem) => {
                 data={chartData}
                 cx="50%"
                 cy="50%"
-                innerRadius={0}
-                outerRadius={80}
+                innerRadius={item.chartOptions?.innerRadius || 0}
+                outerRadius={item.chartOptions?.outerRadius || 80}
                 fill="#8884d8"
                 dataKey="value"
                 nameKey="name"
@@ -221,10 +216,8 @@ const renderChart = (item: DashboardItem) => {
                   <Cell
                     key={`cell-${index}`}
                     fill={
-                      item.chartOptions?.pieColors?.[
-                        index %
-                        (item.chartOptions?.pieColors?.length || 0)
-                      ]
+                      ((item.chartOptions as any)?.pieColors && (item.chartOptions as any).pieColors[index % (item.chartOptions as any).pieColors.length])
+                      || colorPalettes.default.pieColors[index % colorPalettes.default.pieColors.length]
                     }
                   />
                 ))}
