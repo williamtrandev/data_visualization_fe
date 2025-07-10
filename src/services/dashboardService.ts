@@ -31,7 +31,9 @@ export interface DashboardListItem {
 }
 
 export const dashboardService = {
-    createDashboard: async (data: CreateDashboardRequest): Promise<{ message: string; dashboardId: number }> => {
+    createDashboard: async (
+        data: CreateDashboardRequest
+    ): Promise<{ message: string; dashboardId: number }> => {
         try {
             const response = await axiosInstance.post("/Dashboard", data);
             return response.data;
@@ -41,7 +43,9 @@ export const dashboardService = {
         }
     },
 
-    updateDashboard: async (data: UpdateDashboardRequest): Promise<{ message: string }> => {
+    updateDashboard: async (
+        data: UpdateDashboardRequest
+    ): Promise<{ message: string }> => {
         try {
             const response = await axiosInstance.put("/Dashboard", data);
             return response.data;
@@ -53,7 +57,9 @@ export const dashboardService = {
 
     getDashboard: async (dashboardId: number): Promise<Dashboard> => {
         try {
-            const response = await axiosInstance.get(`/Dashboard/${dashboardId}`);
+            const response = await axiosInstance.get(
+                `/Dashboard/${dashboardId}`
+            );
             return response.data;
         } catch (error) {
             console.error("Error fetching dashboard:", error);
@@ -70,4 +76,18 @@ export const dashboardService = {
             throw error;
         }
     },
-}; 
+
+    deleteDashboard: async (
+        dashboardId: number
+    ): Promise<{ message: string }> => {
+        try {
+            const response = await axiosInstance.delete(
+                `/Dashboard/${dashboardId}`
+            );
+            return response.data;
+        } catch (error) {
+            console.error("Error deleting dashboard:", error);
+            throw error;
+        }
+    },
+};

@@ -20,16 +20,22 @@ export const useDatasetDetail = (datasetId: number) => {
         "asc" | "desc" | undefined
     >();
     const [isInitialized, setIsInitialized] = useState(false);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
 
     const currentFilters = useRef<Filter[]>([]);
     const currentSortBy = useRef<string | undefined>();
     const currentSortDirection = useRef<"asc" | "desc" | undefined>();
 
     const loadData = useCallback(
-        async (currentPage: number = 1) => {
-            if (isLoading) return;
+        async (currentPage: number = 1, append: boolean = false) => {
+            if (isLoading && !append) return;
+            if (isLoadingMore && append) return;
 
-            setIsLoading(true);
+            if (append) {
+                setIsLoadingMore(true);
+            } else {
+                setIsLoading(true);
+            }
             setError(null);
 
             try {
@@ -54,7 +60,7 @@ export const useDatasetDetail = (datasetId: number) => {
                     queryParams
                 );
 
-                if (currentPage === 1) {
+                if (currentPage === 1 || !append) {
                     setDataset({
                         datasetId: result.datasetId,
                         datasetName: result.datasetName,
@@ -84,10 +90,14 @@ export const useDatasetDetail = (datasetId: number) => {
                 setError(error);
                 throw error;
             } finally {
-                setIsLoading(false);
+                if (append) {
+                    setIsLoadingMore(false);
+                } else {
+                    setIsLoading(false);
+                }
             }
         },
-        [datasetId, isLoading]
+        [datasetId, isLoading, isLoadingMore]
     );
 
     // Initialize data only once on mount
@@ -99,10 +109,16 @@ export const useDatasetDetail = (datasetId: number) => {
 
     const handlePageChange = useCallback(
         (newPage: number) => {
-            setPage(newPage);
-            loadData(newPage);
+            if (newPage === page + 1) {
+                // Loading more data (infinite scroll)
+                loadData(newPage, true);
+            } else {
+                // Jumping to specific page
+                setPage(newPage);
+                loadData(newPage);
+            }
         },
-        [loadData]
+        [loadData, page]
     );
 
     const addFilter = useCallback(
@@ -110,7 +126,8 @@ export const useDatasetDetail = (datasetId: number) => {
             setFilters((prev) => {
                 const newFilters = [...prev, filter];
                 currentFilters.current = newFilters;
-                setData([]); // Reset data
+                // Reset to page 1 but don't clear data immediately
+                setPage(1);
                 loadData(1);
                 return newFilters;
             });
@@ -123,7 +140,8 @@ export const useDatasetDetail = (datasetId: number) => {
             setFilters((prev) => {
                 const newFilters = prev.filter((_, i) => i !== index);
                 currentFilters.current = newFilters;
-                setData([]); // Reset data
+                // Reset to page 1 but don't clear data immediately
+                setPage(1);
                 loadData(1);
                 return newFilters;
             });
@@ -134,7 +152,8 @@ export const useDatasetDetail = (datasetId: number) => {
     const clearFilters = useCallback(() => {
         setFilters([]);
         currentFilters.current = [];
-        setData([]); // Reset data
+        // Reset to page 1 but don't clear data immediately
+        setPage(1);
         loadData(1);
     }, [loadData]);
 
@@ -144,7 +163,8 @@ export const useDatasetDetail = (datasetId: number) => {
             setSortDirection(direction);
             currentSortBy.current = column;
             currentSortDirection.current = direction;
-            setData([]); // Reset data
+            // Reset to page 1 but don't clear data immediately
+            setPage(1);
             loadData(1);
         },
         [loadData]
@@ -155,7 +175,8 @@ export const useDatasetDetail = (datasetId: number) => {
         setSortDirection(undefined);
         currentSortBy.current = undefined;
         currentSortDirection.current = undefined;
-        setData([]); // Reset data
+        // Reset to page 1 but don't clear data immediately
+        setPage(1);
         loadData(1);
     }, [loadData]);
 
@@ -164,6 +185,7 @@ export const useDatasetDetail = (datasetId: number) => {
         columns,
         data,
         isLoading,
+        isLoadingMore,
         error,
         page,
         totalCount,

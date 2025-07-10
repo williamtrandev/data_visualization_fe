@@ -7,6 +7,19 @@ interface ImportDatasetParams {
     datasetName: string;
 }
 
+export interface ImportApiParams {
+    datasetName: string;
+    apiUrl: string;
+    options: {
+        httpMethod: "GET" | "POST" | "PUT" | "DELETE";
+        maxRecords?: number;
+        timeoutSeconds?: number;
+        flattenNestedObjects?: boolean;
+        headers?: Record<string, string>;
+        body?: any;
+    };
+}
+
 export interface DatasetColumn {
     columnName: string;
     dataType: string;
@@ -191,6 +204,18 @@ export const datasetService = {
         }
     },
 
+    importFromApi: async (params: ImportApiParams): Promise<Dataset> => {
+        try {
+            const response = await axiosInstance.post(
+                "/datasets/import/api",
+                params
+            );
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     getDatasets: async (
         params?: DatasetQueryParams
     ): Promise<DatasetResponse> => {
@@ -215,9 +240,7 @@ export const datasetService = {
         datasetId: number
     ): Promise<DatasetDetail> => {
         try {
-            const response = await axiosInstance.get(
-                `/datasets/${datasetId}`
-            );
+            const response = await axiosInstance.get(`/datasets/${datasetId}`);
             return response.data;
         } catch (error) {
             throw error;

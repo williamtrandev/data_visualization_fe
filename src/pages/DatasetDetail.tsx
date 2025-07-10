@@ -49,6 +49,7 @@ const DatasetDetail = () => {
         columns,
         data,
         isLoading,
+        isLoadingMore,
         error,
         page,
         totalCount,
@@ -74,20 +75,21 @@ const DatasetDetail = () => {
     const observer = useRef<IntersectionObserver>();
     const lastElementRef = useCallback(
         (node: HTMLTableRowElement) => {
-            if (isLoading) return;
+            if (isLoading || isLoadingMore) return;
             if (observer.current) observer.current.disconnect();
             observer.current = new IntersectionObserver((entries) => {
                 if (
                     entries[0].isIntersecting &&
                     page < totalPages &&
-                    !isLoading
+                    !isLoading &&
+                    !isLoadingMore
                 ) {
                     setPage(page + 1);
                 }
             });
             if (node) observer.current.observe(node);
         },
-        [isLoading, page, totalPages, setPage]
+        [isLoading, isLoadingMore, page, totalPages, setPage]
     );
 
     const handleAddFilter = () => {
@@ -392,7 +394,7 @@ const DatasetDetail = () => {
                                 ))}
                             </TableRow>
                         ))}
-                        {isLoading && (
+                        {(isLoading || isLoadingMore) && (
                             <TableRow>
                                 <TableCell
                                     colSpan={columns.length + 1}
@@ -400,6 +402,11 @@ const DatasetDetail = () => {
                                 >
                                     <div className="flex justify-center items-center py-4">
                                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-dashboard-primary"></div>
+                                        <span className="ml-2 text-sm text-muted-foreground">
+                                            {isLoadingMore
+                                                ? "Loading more..."
+                                                : "Loading..."}
+                                        </span>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -409,16 +416,19 @@ const DatasetDetail = () => {
             </div>
 
             {/* Loading indicator at bottom */}
-            {!isLoading && page < totalPages && (
-                <div className="text-center text-muted-foreground">
+            {!isLoading && !isLoadingMore && page < totalPages && (
+                <div className="text-center text-muted-foreground py-4">
                     Scroll to load more...
                 </div>
             )}
-            {!isLoading && page >= totalPages && data.length > 0 && (
-                <div className="text-center text-muted-foreground">
-                    No more data to load
-                </div>
-            )}
+            {!isLoading &&
+                !isLoadingMore &&
+                page >= totalPages &&
+                data.length > 0 && (
+                    <div className="text-center text-muted-foreground py-4">
+                        No more data to load
+                    </div>
+                )}
         </div>
     );
 };

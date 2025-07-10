@@ -29,17 +29,32 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { datasetService } from "@/services/datasetService";
 
 const DataSourceManager = () => {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState("");
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isAddSourceModalOpen, setIsAddSourceModalOpen] = useState(false);
-    const [selectedFileType, setSelectedFileType] = useState<"csv" | "excel">(
-        "csv"
-    );
+    const [selectedFileType, setSelectedFileType] = useState<
+        "csv" | "excel" | "api"
+    >("csv");
     const [datasetName, setDatasetName] = useState("");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [isApiImportModalOpen, setIsApiImportModalOpen] = useState(false);
+
+    // API Import states
+    const [apiUrl, setApiUrl] = useState("");
+    const [httpMethod, setHttpMethod] = useState<
+        "GET" | "POST" | "PUT" | "DELETE"
+    >("GET");
+    const [maxRecords, setMaxRecords] = useState<number>(100);
+    const [timeoutSeconds, setTimeoutSeconds] = useState<number>(30);
+    const [flattenNestedObjects, setFlattenNestedObjects] =
+        useState<boolean>(true);
+    const [customHeaders, setCustomHeaders] = useState<string>("");
+    const [requestBody, setRequestBody] = useState<string>("");
+
     const {
         importDataset,
         isLoading: isImporting,
@@ -67,6 +82,10 @@ const DataSourceManager = () => {
             setSelectedFileType(type.toLowerCase() as "csv" | "excel");
             setIsImportModalOpen(true);
             setIsAddSourceModalOpen(false);
+        } else if (type === "REST API") {
+            setSelectedFileType("api");
+            setIsImportModalOpen(true);
+            setIsAddSourceModalOpen(false);
         } else {
             customToast.success(`Creating new ${type} data source...`);
             setIsAddSourceModalOpen(false);
@@ -81,25 +100,106 @@ const DataSourceManager = () => {
     };
 
     const handleImport = async () => {
+        if (selectedFileType === "api") {
+            await handleApiImport();
+        } else {
+            await handleFileImport();
+        }
+    };
+
+    const handleFileImport = async () => {
         if (!selectedFile || !datasetName) return;
 
         try {
             await importDataset(selectedFile, datasetName);
             customToast.success("Dataset imported successfully!");
             setIsImportModalOpen(false);
-            // Reset form
-            setSelectedFile(null);
-            setDatasetName("");
-            // Reset file input
-            const fileInput = document.querySelector(
-                'input[type="file"]'
-            ) as HTMLInputElement;
-            if (fileInput) fileInput.value = "";
-            // Refresh datasets list
+            resetForm();
             refreshDatasets();
         } catch (err) {
             console.error("Import failed:", err);
             customToast.error("Failed to import dataset");
+        }
+    };
+
+    const handleApiImport = async () => {
+        if (!apiUrl.trim() || !datasetName.trim()) {
+            customToast.error("Vui lòng nhập URL API và tên dataset");
+            return;
+        }
+
+        try {
+            // Parse custom headers
+            let headers: Record<string, string> = {};
+            if (customHeaders.trim()) {
+                try {
+                    headers = JSON.parse(customHeaders);
+                } catch (e) {
+                    customToast.error("Headers không đúng định dạng JSON");
+                    return;
+                }
+            }
+
+            // Parse request body
+            let body: any = undefined;
+            if (requestBody.trim() && httpMethod !== "GET") {
+                try {
+                    body = JSON.parse(requestBody);
+                } catch (e) {
+                    customToast.error("Request body không đúng định dạng JSON");
+                    return;
+                }
+            }
+
+            const apiParams = {
+                datasetName: datasetName,
+                apiUrl: apiUrl,
+                options: {
+                    httpMethod: httpMethod,
+                    maxRecords: maxRecords,
+                    timeoutSeconds: timeoutSeconds,
+                    flattenNestedObjects: flattenNestedObjects,
+                    headers:
+                        Object.keys(headers).length > 0 ? headers : undefined,
+                    body: body,
+                },
+            };
+
+            // Import using datasetService
+            await datasetService.importFromApi(apiParams);
+
+            customToast.success("Dataset từ API đã được import thành công!");
+            setIsImportModalOpen(false);
+            resetForm();
+            refreshDatasets();
+        } catch (error) {
+            console.error("Lỗi khi import từ API:", error);
+            customToast.error("Có lỗi xảy ra khi import từ API");
+        }
+    };
+
+    const resetForm = () => {
+        setSelectedFile(null);
+        setDatasetName("");
+        setApiUrl("");
+        setHttpMethod("GET");
+        setMaxRecords(100);
+        setTimeoutSeconds(30);
+        setFlattenNestedObjects(true);
+        setCustomHeaders("");
+        setRequestBody("");
+        // Reset file input
+        const fileInput = document.querySelector(
+            'input[type="file"]'
+        ) as HTMLInputElement;
+        if (fileInput) fileInput.value = "";
+    };
+
+    const isImportDisabled = () => {
+        if (selectedFileType === "api") {
+            return !apiUrl.trim() || !datasetName.trim();
+        } else {
+            return !selectedFile || !datasetName.trim();
         }
     };
 
@@ -240,10 +340,9 @@ const DataSourceManager = () => {
                         <DialogTitle>Add New Data Source</DialogTitle>
                     </DialogHeader>
                     <Tabs defaultValue="file" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
+                        <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="file">File Upload</TabsTrigger>
                             <TabsTrigger value="api">API</TabsTrigger>
-                            <TabsTrigger value="database">Database</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="file" className="space-y-4 pt-4">
@@ -275,28 +374,6 @@ const DataSourceManager = () => {
                                 REST API Endpoint
                             </Button>
                         </TabsContent>
-
-                        <TabsContent
-                            value="database"
-                            className="space-y-4 pt-4"
-                        >
-                            <Button
-                                variant="outline"
-                                className="w-full justify-start"
-                                onClick={() => handleAddDataSource("MySQL")}
-                            >
-                                <Database className="mr-2 h-4 w-4" />
-                                MySQL
-                            </Button>
-                            <Button
-                                variant="outline"
-                                className="w-full justify-start"
-                                onClick={() => handleAddDataSource("MongoDB")}
-                            >
-                                <Database className="mr-2 h-4 w-4" />
-                                MongoDB
-                            </Button>
-                        </TabsContent>
                     </Tabs>
                 </DialogContent>
             </Dialog>
@@ -306,48 +383,202 @@ const DataSourceManager = () => {
                 open={isImportModalOpen}
                 onOpenChange={setIsImportModalOpen}
             >
-                <DialogContent>
+                <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>
-                            Import {selectedFileType.toUpperCase()} File
+                            {selectedFileType === "api"
+                                ? "Import from REST API"
+                                : `Import ${selectedFileType.toUpperCase()} File`}
                         </DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">
-                                Dataset Name
-                            </label>
-                            <Input
-                                value={datasetName}
-                                onChange={(e) => setDatasetName(e.target.value)}
-                                placeholder="Enter dataset name"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">
-                                Select File
-                            </label>
-                            <Input
-                                type="file"
-                                accept={
-                                    selectedFileType === "csv"
-                                        ? ".csv"
-                                        : ".xlsx,.xls"
-                                }
-                                onChange={handleFileChange}
-                            />
-                        </div>
-                        {importError && (
-                            <div className="text-sm text-red-500">
-                                Error: {importError.message}
+
+                    {selectedFileType === "api" ? (
+                        // API Import Form
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    Dataset Name
+                                </label>
+                                <Input
+                                    value={datasetName}
+                                    onChange={(e) =>
+                                        setDatasetName(e.target.value)
+                                    }
+                                    placeholder="e.g., JSONPlaceholder Posts"
+                                />
                             </div>
-                        )}
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    API URL
+                                </label>
+                                <Input
+                                    type="url"
+                                    placeholder="https://jsonplaceholder.typicode.com/posts"
+                                    value={apiUrl}
+                                    onChange={(e) => setApiUrl(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">
+                                        HTTP Method
+                                    </label>
+                                    <select
+                                        className="w-full p-2 border rounded-md"
+                                        value={httpMethod}
+                                        onChange={(e) =>
+                                            setHttpMethod(e.target.value as any)
+                                        }
+                                    >
+                                        <option value="GET">GET</option>
+                                        <option value="POST">POST</option>
+                                        <option value="PUT">PUT</option>
+                                        <option value="DELETE">DELETE</option>
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">
+                                        Max Records
+                                    </label>
+                                    <Input
+                                        type="number"
+                                        min="1"
+                                        max="10000"
+                                        value={maxRecords}
+                                        onChange={(e) =>
+                                            setMaxRecords(
+                                                Number(e.target.value)
+                                            )
+                                        }
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">
+                                        Timeout (seconds)
+                                    </label>
+                                    <Input
+                                        type="number"
+                                        min="5"
+                                        max="300"
+                                        value={timeoutSeconds}
+                                        onChange={(e) =>
+                                            setTimeoutSeconds(
+                                                Number(e.target.value)
+                                            )
+                                        }
+                                    />
+                                </div>
+
+                                <div className="flex items-center space-x-2 pt-6">
+                                    <input
+                                        type="checkbox"
+                                        id="flatten"
+                                        checked={flattenNestedObjects}
+                                        onChange={(e) =>
+                                            setFlattenNestedObjects(
+                                                e.target.checked
+                                            )
+                                        }
+                                        className="rounded"
+                                    />
+                                    <label
+                                        htmlFor="flatten"
+                                        className="text-sm font-medium"
+                                    >
+                                        Flatten nested objects
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    Custom Headers (JSON)
+                                </label>
+                                <textarea
+                                    className="w-full p-2 border rounded-md"
+                                    placeholder='{"Authorization": "Bearer token", "Content-Type": "application/json"}'
+                                    value={customHeaders}
+                                    onChange={(e) =>
+                                        setCustomHeaders(e.target.value)
+                                    }
+                                    rows={3}
+                                />
+                            </div>
+
+                            {httpMethod !== "GET" && (
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">
+                                        Request Body (JSON)
+                                    </label>
+                                    <textarea
+                                        className="w-full p-2 border rounded-md"
+                                        placeholder='{"key": "value"}'
+                                        value={requestBody}
+                                        onChange={(e) =>
+                                            setRequestBody(e.target.value)
+                                        }
+                                        rows={4}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        // File Import Form
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    Dataset Name
+                                </label>
+                                <Input
+                                    value={datasetName}
+                                    onChange={(e) =>
+                                        setDatasetName(e.target.value)
+                                    }
+                                    placeholder="Enter dataset name"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    Select File
+                                </label>
+                                <Input
+                                    type="file"
+                                    accept={
+                                        selectedFileType === "csv"
+                                            ? ".csv"
+                                            : ".xlsx,.xls"
+                                    }
+                                    onChange={handleFileChange}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {importError && (
+                        <div className="text-sm text-red-500">
+                            Error: {importError.message}
+                        </div>
+                    )}
+
+                    <div className="flex justify-end space-x-2 pt-4">
                         <Button
-                            className="w-full"
+                            variant="outline"
+                            onClick={() => {
+                                setIsImportModalOpen(false);
+                                resetForm();
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
                             onClick={handleImport}
-                            disabled={
-                                isImporting || !selectedFile || !datasetName
-                            }
+                            disabled={isImporting || isImportDisabled()}
                         >
                             {isImporting ? "Importing..." : "Import Dataset"}
                         </Button>
